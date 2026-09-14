@@ -99,7 +99,7 @@ try {
   window.__FIXTURE__ = ${JSON.stringify(JSON.stringify(rows))};
   localStorage.setItem('ic.cfg.v2', ${JSON.stringify(
     JSON.stringify({
-      token: 'offline-migration-token',
+      token: 'offline-migration-token', // guard-allow 离线占位值：接口已被页面内 fetch 桩顶替，不发真实请求
       companycode: '00000000',
       username: 'offline-migration',
       account: '',

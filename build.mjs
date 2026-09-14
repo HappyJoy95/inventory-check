@@ -34,9 +34,12 @@ if (hits.length) {
   process.exit(1);
 }
 
-const out = path.join(dir, '库存盘点.html');
-fs.writeFileSync(out, html);
+// 两个产物内容逐字节相同，只是交付形态不同：
+//  · 库存盘点.html — 单文件交付，双击即用（线下分发/企业微信发文件）
+//  · index.html    — 网页托管入口（GitHub Pages 只认 index.html，见 README「网页版」）
+const targets = ['库存盘点.html', 'index.html'];
+for (const name of targets) fs.writeFileSync(path.join(dir, name), html);
 const kb = (Buffer.byteLength(html) / 1024).toFixed(1);
-console.log(`已生成 ${path.basename(out)}（${kb} KB）`);
+console.log(`已生成 ${targets.join(' + ')}（各 ${kb} KB，内容相同）`);
 console.log('凭证检查：通过（源码与产物均不含账号凭证）');
-console.log('双击该文件即可使用（推荐 Chrome / Edge）。');
+console.log('双击「库存盘点.html」即可使用（推荐 Chrome / Edge）；「index.html」用于网页托管。');

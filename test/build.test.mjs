@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { scanText, scanAll, SOURCE_FILES, ARTIFACT } from '../tools/guard.mjs';
+import { scanText, scanAll, SOURCE_FILES, ARTIFACT, ARTIFACTS } from '../tools/guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -54,6 +54,13 @@ const out = execFileSync('node', ['build.mjs'], { cwd: root, encoding: 'utf8' })
 ok(/凭证检查：通过/.test(out), '构建时执行了凭证检查');
 const after = fs.readFileSync(path.join(root, ARTIFACT), 'utf8');
 ok(before === after, '重新构建后产物逐字节相同');
+
+// 网页托管入口：index.html 必须与单文件交付物逐字节相同（否则线上版本会和线下发出去的版本不一致）
+ok(ARTIFACTS.length === 2 && ARTIFACTS.includes(ARTIFACT) && ARTIFACTS.includes('index.html'), '产物清单同时包含单文件交付物与网页入口', ARTIFACTS);
+const idx = path.join(root, 'index.html');
+ok(fs.existsSync(idx), '网页入口 index.html 存在（GitHub Pages 只认 index.html）');
+ok(fs.existsSync(idx) && fs.readFileSync(idx, 'utf8') === after, 'index.html 与单文件交付物内容逐字节相同');
+ok(!fs.readFileSync(idx, 'utf8').includes('/*__CORE__*/'), 'index.html 里没有未替换的占位符');
 ok(
   SOURCE_FILES.every((f) => fs.existsSync(path.join(root, f))),
   '守卫覆盖的源文件都存在',

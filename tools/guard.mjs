@@ -28,6 +28,16 @@ export const SOURCE_FILES = [
   'test/xlsx.test.mjs',
   'test/live.test.mjs',
   'test/login.test.mjs',
+  'test/session.test.mjs',
+  'test/pagination.test.mjs',
+  'test/resume-offline.test.mjs',
+  'test/e2e-offline.test.mjs',
+  'test/index-isolation.test.mjs',
+  'test/save-failure.test.mjs',
+  'test/migration.test.mjs',
+  'test/in-transit.test.mjs',
+  'test/load-backup.test.mjs',
+  'test/pages-origin.test.mjs',
   'test/browser.test.mjs',
   'test/browser-login.test.mjs',
   'test/layout.test.mjs',
@@ -35,7 +45,11 @@ export const SOURCE_FILES = [
   'test/build.test.mjs',
 ];
 
+/** 单文件交付物（双击使用） */
 export const ARTIFACT = '库存盘点.html';
+
+/** 全部构建产物：内容逐字节相同，只是交付形态不同（index.html 供网页托管） */
+export const ARTIFACTS = [ARTIFACT, 'index.html'];
 
 /** 一个 32 位十六进制串（token 形态），要求至少含一个字母，避免把 32 位纯数字串号误判 */
 const HEX32 = /\b(?=[0-9a-fA-F]{32}\b)(?=[0-9a-fA-F]*[a-fA-F])[0-9a-fA-F]{32}\b/g;
@@ -122,10 +136,9 @@ export function scanFiles(root, files) {
   return out;
 }
 
-/** 构建/测试统一入口：扫描源码 + 产物 */
+/** 构建/测试统一入口：扫描源码 + 全部产物（含网页托管入口 index.html） */
 export function scanAll(root) {
-  const files = SOURCE_FILES.concat([ARTIFACT]);
-  return scanFiles(root, files);
+  return scanFiles(root, SOURCE_FILES.concat(ARTIFACTS));
 }
 
 export function formatHits(hits) {
