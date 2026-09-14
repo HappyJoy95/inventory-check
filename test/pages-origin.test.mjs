@@ -37,23 +37,32 @@ const check = (cond, label, extra) => {
   }
 };
 
-// ---- 静态服务器：模拟项目型 Pages 的子路径 /inventory-check/ ----
-// 托管的就是 Pages 实际会吐出去的那个文件（index.html），而不是本地双击用的那一份
+// ---- 站点来源 ----
+// 默认：本地起一个静态服务器，托管 Pages 实际会吐出去的那个文件（index.html），
+// 路径形态与项目型 Pages 一致（/inventory-check/），全程离线。
+// 也可以用 PAGES_URL 直接对**线上站点**跑同一套断言，例如：
+//   PAGES_URL=https://happyjoy95.github.io/inventory-check/ node test/pages-origin.test.mjs
 const body = fs.readFileSync(INDEX);
 check(body.equals(fs.readFileSync(HTML)), 'index.html 与 库存盘点.html 内容逐字节相同（线上 = 线下）');
-const server = http.createServer((req, res) => {
-  const u = req.url.split('?')[0];
-  if (u === '/inventory-check/' || u === '/inventory-check/index.html' || u === '/') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end(body);
-    return;
-  }
-  res.writeHead(404, { 'Content-Type': 'text/plain' });
-  res.end('404');
-});
-await new Promise((r) => server.listen(0, '127.0.0.1', r));
-const SITE = `http://127.0.0.1:${server.address().port}/inventory-check/`;
-console.log('静态站点：' + SITE);
+
+const REMOTE = (process.env.PAGES_URL || '').trim();
+let server = null;
+let SITE = REMOTE;
+if (!REMOTE) {
+  server = http.createServer((req, res) => {
+    const u = req.url.split('?')[0];
+    if (u === '/inventory-check/' || u === '/inventory-check/index.html' || u === '/') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(body);
+      return;
+    }
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('404');
+  });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  SITE = `http://127.0.0.1:${server.address().port}/inventory-check/`;
+}
+console.log((REMOTE ? '线上站点：' : '本地静态站点：') + SITE);
 
 class CDP {
   constructor(u) {
@@ -177,13 +186,14 @@ try {
   await cdp.send('Page.enable');
   await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: seed });
   await cdp.send('Page.navigate', { url: SITE });
-  await sleep(1500);
+  // 线上站点首次加载可能很慢（跨网络），等页面自身就绪的超时放宽
+  await sleep(REMOTE ? 4000 : 1500);
 
-  console.log('\n— 1. 页面在 http 源下启动 —');
+  console.log('\n— 1. 页面在网页来源下启动 —');
   const boot = await cdp.eval(`(async () => {
     const t0 = Date.now();
     const wait = async (fn, ms) => { for (;;) { let v=false; try { v=fn(); } catch(e){} if (v) return true; if (Date.now()-t0>ms) return false; await new Promise(r=>setTimeout(r,150)); } };
-    const ok = await wait(() => document.querySelectorAll('#store option').length > 1, 20000);
+    const ok = await wait(() => document.querySelectorAll('#store option').length > 1, ${REMOTE ? 120000 : 20000});
     return {
       origin: location.origin, protocol: location.protocol, secure: isSecureContext,
       title: document.title,
@@ -208,7 +218,7 @@ try {
     document.querySelector('#date').value = ${JSON.stringify(meta.date)};
     document.querySelector('#store').value = ${JSON.stringify(meta.storeId)};
     document.querySelector('#btn-start').click();
-    const started = await wait(() => !document.querySelector('#scan-card').classList.contains('hidden'), 30000);
+    const started = await wait(() => !document.querySelector('#scan-card').classList.contains('hidden'), ${REMOTE ? 60000 : 30000});
     await new Promise(r=>setTimeout(r,600));
     const book = JSON.parse(localStorage.getItem('ic.book.v2') || 'null');
     const stats = {}; document.querySelectorAll('#stats .stat').forEach(x=>stats[x.querySelector('.k').textContent]=x.querySelector('.v').textContent);
@@ -235,7 +245,7 @@ try {
     if (cdp && cdp.ws) cdp.ws.close();
   } catch (e) {}
   edge.kill();
-  server.close();
+  if (server) server.close();
   await sleep(300);
   fs.rmSync(PROFILE, { recursive: true, force: true });
 }

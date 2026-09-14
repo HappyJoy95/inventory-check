@@ -283,6 +283,11 @@ https://happyjoy95.github.io/inventory-check/
 - 接口调用方式与本地一致：ERP 接口会回显请求 `Origin`，所以 `https://happyjoy95.github.io` 这个来源同样被放行（已实测三个接口的 CORS 预检）。
 - **注意：本地存储按来源隔离。** `file://` 双击打开与网页版是两个不同的来源，扫码进度不互通。要换到网页版继续盘，先在旧端「下载会话备份」，再到网页版点「加载未完成盘点」导入。
 - 仓库是公开的（Pages 免费账号只能从 public 仓库发布）。页面本身不含任何凭证（构建守卫强制），但**源码与接口地址是公开的**，别把 token / 商家编码 / 真实库存数据提交进来。
+- 想确认线上跑的就是仓库里这一版，对着线上站点跑同一套断言即可（默认是本地托管、离线跑）：
+
+  ```bash
+  PAGES_URL=https://happyjoy95.github.io/inventory-check/ node test/pages-origin.test.mjs
+  ```
 
 生产联调与端到端测试的凭证**只从环境变量读**，测试文件和交付物里不含任何凭证；没提供时会明确跳过而不是失败：
 
