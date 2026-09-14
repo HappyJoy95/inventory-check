@@ -1,0 +1,16 @@
+{
+  "name": "inventory-check",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "门店库存盘点工具：拉取 ERP 库存 + 扫码枪核对 SN/IMEI，输出未扫到与表外码",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node test/engine.test.mjs && node test/session.test.mjs && node test/pagination.test.mjs && node test/xlsx.test.mjs && node test/fixture.test.mjs && node test/build.test.mjs && node test/no-credentials.test.mjs && node test/resume-offline.test.mjs && node test/e2e-offline.test.mjs && node test/index-isolation.test.mjs && node test/save-failure.test.mjs && node test/migration.test.mjs && node test/in-transit.test.mjs && node test/load-backup.test.mjs",
+    "test:api": "node test/login.test.mjs",
+    "test:live": "node test/live.test.mjs",
+    "test:e2e": "node test/browser.test.mjs && node test/layout.test.mjs && node test/browser-login.test.mjs",
+    "test:all": "npm test && npm run test:api && npm run test:e2e",
+    "shots": "node test/screenshot.mjs"
+  }
+}

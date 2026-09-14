@@ -1,0 +1,10 @@
+# 系统与临时产物
+.DS_Store
+test/tmp/
+node_modules/
+*.log
+
+# 真实抓取的回归夹具不进仓库（只提交合成夹具 synthetic-*.json）
+# 真实夹具由 test:live --write-fixture 生成，含门店真实商品名与串号
+test/fixtures/*.json
+!test/fixtures/synthetic-*.json

@@ -1,0 +1,5370 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>门店库存盘点 · 扫码核对</title>
+    <style>
+      :root {
+  --bg: #f2f4f8;
+  --card: #ffffff;
+  --line: #e2e6ee;
+  --text: #1b2233;
+  --muted: #6b7688;
+  --brand: #1f6feb;
+  --brand-dark: #1758bd;
+  --ok: #12a150;
+  --ok-bg: #e8f7ee;
+  --warn: #d98f00;
+  --warn-bg: #fff6e0;
+  --danger: #d92d20;
+  --danger-bg: #fdeceb;
+  --info: #7048e8;
+  --info-bg: #f1ecff;
+  --radius: 12px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 8px 24px rgba(16, 24, 40, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 16px 20px 60px;
+}
+
+/* ---------- 顶栏 ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0 16px;
+  flex-wrap: wrap;
+}
+
+.topbar h1 {
+  font-size: 20px;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.topbar h1 span {
+  color: var(--brand);
+}
+
+.topbar .session {
+  color: var(--muted);
+  font-size: 13px;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pill {
+  background: #eaeef6;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: #3c4a63;
+}
+
+.pill.on {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.pill.loading {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+/* ---------- 卡片 ---------- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.card h2 {
+  font-size: 15px;
+  margin: 0 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card h2 .sub {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ---------- 表单 ---------- */
+.row {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field > label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+input[type='text'],
+input[type='date'],
+input[type='password'],
+input[type='number'],
+select {
+  font: inherit;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--text);
+  outline: none;
+  min-width: 0;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.13);
+}
+
+select {
+  max-width: 380px;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  padding: 9px 16px;
+  transition: 0.15s;
+}
+
+button:hover {
+  border-color: #c8d2e2;
+  background: #f7f9fc;
+}
+
+button.primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  font-weight: 600;
+}
+
+button.primary:hover {
+  background: var(--brand-dark);
+  border-color: var(--brand-dark);
+}
+
+button.ghost {
+  background: transparent;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 10px;
+  line-height: 1.7;
+}
+
+.hint b {
+  color: #3c4a63;
+}
+
+.adv {
+  margin-top: 12px;
+  border-top: 1px dashed var(--line);
+  padding-top: 12px;
+}
+
+.adv summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ---------- 扫码台 ---------- */
+.scan-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 18px;
+}
+
+@media (max-width: 900px) {
+  .scan-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.scan-input {
+  width: 100%;
+  font-size: 26px !important;
+  letter-spacing: 1px;
+  padding: 16px 18px !important;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  border: 2px solid var(--brand) !important;
+  border-radius: 12px !important;
+  background: #fbfdff !important;
+}
+
+.scan-input::placeholder {
+  color: #a9b4c7;
+  font-size: 16px;
+  letter-spacing: 0;
+}
+
+.feedback {
+  margin-top: 12px;
+  border-radius: 10px;
+  padding: 14px 16px;
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f6f8fb;
+  border: 1px solid var(--line);
+  transition: background 0.12s;
+}
+
+.feedback .icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.feedback .fb-main {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.feedback .fb-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 3px;
+  word-break: break-all;
+}
+
+.feedback.ok {
+  background: var(--ok-bg);
+  border-color: #b7e4c7;
+}
+
+.feedback.ok .fb-main {
+  color: var(--ok);
+}
+
+.feedback.dup {
+  background: var(--warn-bg);
+  border-color: #f3d99b;
+}
+
+.feedback.dup .fb-main {
+  color: var(--warn);
+}
+
+.feedback.foreign {
+  background: var(--info-bg);
+  border-color: #d6c9ff;
+}
+
+.feedback.foreign .fb-main {
+  color: var(--info);
+}
+
+.feedback.unknown {
+  background: var(--danger-bg);
+  border-color: #f6c6c2;
+}
+
+.feedback.unknown .fb-main {
+  color: var(--danger);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stat {
+  background: #f7f9fc;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.stat .k {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.stat .v {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat.ok .v {
+  color: var(--ok);
+}
+
+.stat.warn .v {
+  color: var(--warn);
+}
+
+.stat.danger .v {
+  color: var(--danger);
+}
+
+.stat.info .v {
+  color: var(--info);
+}
+
+.progress {
+  height: 10px;
+  background: #e8ecf4;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 12px 0 6px;
+}
+
+.progress > i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #35c46f, #12a150);
+  transition: width 0.25s;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.recent {
+  margin-top: 14px;
+  font-size: 12.5px;
+}
+
+.recent .item {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px dashed #eef1f6;
+  color: var(--muted);
+}
+
+.recent .item .code {
+  font-family: 'SF Mono', Menlo, monospace;
+  color: #3c4a63;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  align-items: center;
+}
+
+.toolbar .spacer {
+  flex: 1;
+}
+
+/* ---------- 标签页 ---------- */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.tabs button {
+  border: none;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 9px 14px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.tabs button:hover {
+  background: #f7f9fc;
+  border-color: transparent;
+  border-bottom-color: #d7dfec;
+}
+
+.tabs button.active {
+  color: var(--brand);
+  border-bottom-color: var(--brand);
+  font-weight: 600;
+}
+
+.tabs .badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  margin-left: 6px;
+  border-radius: 9px;
+  background: #e8ecf4;
+  color: #4a5670;
+  font-size: 11px;
+  text-align: center;
+}
+
+.tabs button.active .badge {
+  background: var(--brand);
+  color: #fff;
+}
+
+.tabs .badge.hot {
+  background: #ffe2df;
+  color: var(--danger);
+}
+
+/* ---------- 表格 ---------- */
+.table-wrap {
+  overflow: auto;
+  max-height: 560px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: #f7f9fc;
+  text-align: left;
+  padding: 9px 10px;
+  font-weight: 600;
+  color: #46536b;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  z-index: 1;
+}
+
+tbody td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #f1f4f9;
+  vertical-align: top;
+}
+
+tbody tr:hover {
+  background: #fafcff;
+}
+
+td.mono,
+.mono {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+
+td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.tag {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  background: #eef1f7;
+  color: #55617a;
+  white-space: nowrap;
+}
+
+.tag.ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+
+.tag.dup {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.tag.foreign {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.tag.unknown {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.empty .big {
+  font-size: 30px;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.qty-input {
+  width: 84px;
+  padding: 5px 8px !important;
+  text-align: right;
+}
+
+.note-input {
+  width: 100%;
+  min-width: 120px;
+  padding: 5px 8px !important;
+  font-size: 12.5px;
+}
+
+.diff-pos {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.diff-neg {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.sum-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.sum-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #fbfcfe;
+}
+
+.sum-item .k {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.sum-item .v {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.mini-btn {
+  padding: 4px 10px;
+  font-size: 12.5px;
+  border-radius: 7px;
+  white-space: nowrap;
+  border-color: #b7e4c7;
+  background: var(--ok-bg);
+  color: #0d7a3d;
+  font-weight: 600;
+}
+
+.mini-btn:hover {
+  background: #d8f2e3;
+  border-color: #8fd3ab;
+}
+
+button.ghost-btn {
+  background: #fff;
+  border-color: var(--line);
+  color: var(--muted);
+  font-weight: 500;
+}
+
+button.ghost-btn:hover {
+  background: #fdeceb;
+  border-color: #f6c6c2;
+  color: var(--danger);
+}
+
+td.act-cell {
+  white-space: nowrap;
+}
+
+button.mini-x {
+  padding: 0 6px;
+  line-height: 20px;
+  font-size: 12px;
+  border-radius: 6px;
+  border-color: transparent;
+  background: transparent;
+  color: #9aa5b8;
+}
+
+button.mini-x:hover {
+  background: #fdeceb;
+  border-color: #f6c6c2;
+  color: var(--danger);
+}
+
+/* ---------- 保存状态 ---------- */
+.save-status {
+  margin-left: auto;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.save-status.ok {
+  color: var(--ok);
+}
+
+.save-status.err {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+#btn-backup.need {
+  border-color: var(--danger);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ---------- 登录区 ---------- */
+.login-box {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 2px 14px 12px;
+  margin-top: 12px;
+  background: #fbfcfe;
+}
+
+.chk {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 13px;
+}
+
+#captcha-img {
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.login-status {
+  font-size: 12.5px;
+  margin-top: 8px;
+  min-height: 18px;
+  color: var(--muted);
+  word-break: break-all;
+}
+
+.login-status.ok {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.login-status.err {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.login-status.warn {
+  color: var(--warn);
+  font-weight: 600;
+}
+
+.login-status.loading {
+  color: var(--brand);
+}
+
+/* ---------- 提示条 ---------- */
+.toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  background: #21283a;
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  z-index: 99;
+  max-width: 420px;
+  font-size: 13.5px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: 0.2s;
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: none;
+}
+
+.toast.err {
+  background: #7a1d17;
+}
+
+.loading-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(242, 244, 248, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  backdrop-filter: blur(2px);
+}
+
+.loading-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 26px 34px;
+  box-shadow: var(--shadow);
+  text-align: center;
+  border: 1px solid var(--line);
+}
+
+.spinner {
+  width: 30px;
+  height: 30px;
+  border: 3px solid #dde4f0;
+  border-top-color: var(--brand);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-box .msg {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.loading-box .sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+@media print {
+  .topbar .session,
+  .toolbar,
+  .tabs,
+  .export-bar,
+  #setup,
+  #scan-card {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .card {
+    box-shadow: none;
+    border: none;
+    padding: 0;
+  }
+  .table-wrap {
+    max-height: none;
+    overflow: visible;
+    border: none;
+  }
+}
+
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <h1>门店<span>库存盘点</span></h1>
+        <div class="session" id="session-info"></div>
+        <button id="btn-settings" class="ghost">接口设置</button>
+      </div>
+
+      <!-- 设置 / 拉取 -->
+      <section class="card hidden" id="setup">
+        <h2>① 选择门店并拉取账面库存 <span class="sub">数据来自云商 ERP 实时库存</span></h2>
+        <div class="row">
+          <div class="field">
+            <label>盘点日期（库存快照日）</label>
+            <input type="date" id="date" />
+          </div>
+          <div class="field">
+            <label>筛选仓库</label>
+            <input type="text" id="store-filter" placeholder="输入关键字过滤，如：万达" style="width: 150px" />
+          </div>
+          <div class="field" style="flex: 1; min-width: 260px">
+            <label>仓库（门店仓）</label>
+            <select id="store" style="width: 100%; max-width: none"></select>
+          </div>
+          <button id="btn-load-wh" class="ghost">刷新仓库列表</button>
+          <button id="btn-start" class="primary">开始拉取库存</button>
+          <button id="btn-load-backup" class="ghost" title="导入之前导出的「会话备份」JSON，接着上次没盘完的继续">加载未完成盘点</button>
+          <input type="file" id="backup-file" accept=".json,application/json" class="hidden" />
+        </div>
+        <div class="hint">
+          选择门店对应的<b>仓库</b>，点击开始拉取。拉取成功后进入扫码盘点界面。<br />
+          换电脑、清了浏览器数据、或者从别人那台机器接手时，用 <b>加载未完成盘点</b> 选之前导出的会话备份 JSON，
+          就能接着上次的进度继续盘（账面、扫码、手工确认、实盘数量、备注都会回来）。
+        </div>
+
+        <details class="adv">
+          <summary>账号密码登录 / 接口设置</summary>
+          <div class="login-box">
+            <div class="hint" style="margin-top: 10px; color: #3c4a63">
+              <b>首次使用：</b>填入你<b>自己的</b> ERP 账号和密码 → 点「登录并更新 token」。
+              程序会用账号换 token，并自动带出商家编码，之后 token 过期会自动续期。<br />
+              本工具<b>不含任何内置账号或凭证</b>，不会用别人的身份拉数据。
+            </div>
+            <div class="row" style="margin-top: 12px">
+              <div class="field">
+                <label>ERP 账号</label>
+                <input type="text" id="cfg-account" autocomplete="username" style="width: 180px" />
+              </div>
+              <div class="field">
+                <label>密码</label>
+                <input type="password" id="cfg-password" autocomplete="current-password" style="width: 180px" />
+              </div>
+              <button id="btn-login" class="primary">登录并更新 token</button>
+              <label class="chk"><input type="checkbox" id="opt-remember" /> 记住密码</label>
+              <button id="btn-forget" class="ghost">清除已保存密码</button>
+              <button id="btn-use-token" class="ghost">用下面的 token 验证</button>
+            </div>
+            <div class="row hidden" id="captcha-row" style="margin-top: 10px">
+              <img id="captcha-img" alt="验证码" title="点一下换一张" />
+              <input type="text" id="cfg-vcode" placeholder="输入图中验证码" style="width: 150px" maxlength="8" />
+              <button id="btn-vcode">提交验证码</button>
+              <span class="hint" style="margin: 0">看不清就点图片换一张</span>
+            </div>
+            <div class="login-status" id="login-status"></div>
+            <div class="hint" style="margin-top: 6px">
+              <b>只保存 token 是默认行为</b>：不勾「记住密码」时，本机只留 token，密码不落盘；
+              token 过期会提示你重新登录。<br />
+              勾上「记住密码」后，token 过期才能自动续期：密码以明文存在<b>本机浏览器</b>（只在本机可见、不会上传），
+              公用电脑请保持不勾选，或事后点「清除已保存密码」。
+            </div>
+          </div>
+
+          <div class="row" style="margin-top: 12px">
+            <div class="field" style="flex: 1; min-width: 260px">
+              <label>登录 token（一般不用手工填：登录后会自动写入）</label>
+              <input type="text" id="cfg-token" class="mono" />
+            </div>
+            <div class="field">
+              <label>商家编码 companycode</label>
+              <input type="text" id="cfg-company" />
+            </div>
+            <div class="field">
+              <label>用户名 username</label>
+              <input type="text" id="cfg-user" />
+            </div>
+          </div>
+          <div class="row" style="margin-top: 12px">
+            <label class="chk"><input type="checkbox" id="opt-sound" /> 扫码提示音</label>
+            <label class="chk">
+              <input type="checkbox" id="opt-index" /> 拉取库存后自动建立全库串号索引（约 10~20 秒，用于识别非本店库存）
+            </label>
+            <label class="chk">
+              <input type="checkbox" id="opt-transit" /> 拉取「在途（待入库）」清单（账面已挂到本店、货还没到的）
+            </label>
+            <button id="btn-gi" class="ghost">立即加载全库索引</button>
+          </div>
+          <div class="hint">
+            所有设置都只保存在本机浏览器 localStorage，不会上传到任何地方。
+          </div>
+        </details>
+      </section>
+
+      <!-- 扫码台 -->
+      <section class="card hidden" id="scan-card">
+        <h2>② 扫码盘点 <span class="sub" id="scan-store"></span></h2>
+        <div class="scan-grid">
+          <div>
+            <input
+              type="text"
+              id="scan-input"
+              class="scan-input"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="把光标放这里，扫码枪扫 SN / IMEI 条码（会自动回车提交）"
+            />
+            <div class="feedback" id="feedback"></div>
+            <div class="toolbar">
+              <button id="btn-undo">撤销上一扫</button>
+              <button id="btn-update-book" class="ghost" title="重新从 ERP 拉取库存，先看差异再决定是否应用；旧账面会保留为上一版">更新账面</button>
+              <button id="btn-backup" class="ghost" title="把当前会话（账面 + 记录）导出成文件，保存失败时用它保命">下载会话备份</button>
+              <button id="btn-new" class="ghost">结束本次盘点</button>
+              <span class="save-status" id="save-status"></span>
+            </div>
+            <div class="recent" id="recent"></div>
+          </div>
+          <div>
+            <div class="stat-grid" id="stats"></div>
+            <div class="progress"><i id="progress-bar"></i></div>
+            <div class="progress-label"><span id="progress-text"></span><span id="progress-extra"></span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 账面更新差异评审 -->
+      <section class="card hidden" id="book-diff-card">
+        <h2>账面更新评审 <span class="sub">确认差异后再应用，旧账面会保留为上一版</span></h2>
+        <div id="book-diff-body"></div>
+        <div class="toolbar">
+          <button id="btn-apply-book" class="primary">应用新账面</button>
+          <button id="btn-cancel-book" class="ghost">取消，保持当前账面</button>
+        </div>
+      </section>
+
+      <!-- 结果 -->
+      <section class="card hidden" id="results-card">
+        <h2>③ 盘点结果 <span class="sub">扫完后在这里看未扫到 / 表外码</span></h2>
+        <div class="tabs" id="tabs"></div>
+        <div id="tab-body"></div>
+        <div class="toolbar export-bar">
+          <button id="btn-export" class="primary">导出完整 Excel</button>
+          <button id="btn-export-csv">导出 CSV</button>
+          <button id="btn-print">打印</button>
+          <span class="spacer"></span>
+          <span class="hint" style="margin: 0">扫描记录实时保存在本机浏览器，关掉页面再打开可继续</span>
+        </div>
+      </section>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <div class="loading-mask hidden" id="loading">
+      <div class="loading-box">
+        <div class="spinner"></div>
+        <div class="msg" id="loading-msg">处理中…</div>
+        <div class="sub" id="loading-sub"></div>
+      </div>
+    </div>
+
+    <script>
+      /* 库存盘点 - 核心逻辑（纯逻辑，无 DOM、无网络，可在 Node 里单测）
+ * 归入 globalThis.IC.core
+ */
+globalThis.IC = globalThis.IC || {};
+(function () {
+  const IC = globalThis.IC;
+
+  /* ---------------- 基础工具 ---------------- */
+
+  // 转字符串并去首尾空白
+  function s(v) {
+    return v === null || v === undefined ? '' : String(v).trim();
+  }
+
+  // 串号码归一化：去掉所有空白（含全角空格），转大写
+  // 目的：容忍扫码枪带入的空格/换行，以及大小写差异
+  function normCode(v) {
+    return s(v).replace(/[\s\u3000]+/g, '').toUpperCase();
+  }
+
+  function num(v) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  // 格式化时间戳
+  function fmtTime(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(
+      d.getMinutes()
+    )}:${p(d.getSeconds())}`;
+  }
+
+  function todayStr(ts) {
+    const d = ts ? new Date(ts) : new Date();
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  }
+
+  /* ---------------- 数据归一化 ---------------- */
+
+  // 一行 ERP 库存记录 -> 盘点项
+  // 接口字段映射：Imei=串号1、Imei2=串号2、Imei3=串号3、SubImei=三个串号空格拼接
+  function normalizeItem(raw, storeId, idx) {
+    const serials = [];
+    const push = (v) => {
+      const c = s(v);
+      if (c && serials.indexOf(c) < 0) serials.push(c);
+    };
+    push(raw.Imei);
+    push(raw.Imei2);
+    push(raw.Imei3);
+    // SubImei 兜底：某些行 Imei2/Imei3 为空，但 SubImei 里带着全部串号
+    s(raw.SubImei)
+      .split(/[\s,;，；]+/)
+      .forEach(push);
+
+    const rowId = raw.RowId === undefined || raw.RowId === null ? idx : raw.RowId;
+    return {
+      key: 'r' + rowId,
+      rowId: rowId,
+      storeId: storeId,
+      store: s(raw.Store),
+      name: s(raw.ProName),
+      cat1: s(raw.Category1),
+      cat2: s(raw.Category2),
+      cat3: s(raw.Category3),
+      cat4: s(raw.Category4),
+      brand: s(raw.Brand),
+      model: s(raw.Model),
+      tag: s(raw.OldFlag), // 串号标识：样/新/J/K 等
+      proId: s(raw.ProId), // 商品编码
+      code69: s(raw.SNCode), // 69码
+      priceLabel: s(raw.PriceLabel), // 价格标签
+      qty: num(raw.ProCount), // 在库数量
+      qtyOnTransfer: num(raw.ProCount_OnTransfer), // 在途数量（同表另取一列）
+      serials: serials,
+      hasSerial: serials.length > 0,
+      // 在途（待入库）：这行账挂在（目标）门店上，但实物还没到。
+      // 判定规则：本店在库为 0、但在途数量 > 0 —— 在库优先，避免把同时在库的行误判成在途。
+      inTransit: false,
+      inTransitInfo: null,
+      // 盘点结果（扫描后填充）
+      matchedCode: '',
+      matchedAt: 0,
+      extraSerialHits: [], // 同一台机器的其它串号被扫到时记录在此
+      manualAt: 0, // 手工确认「已找到」的时间（扫不到码的样机等）
+    };
+  }
+
+  /**
+   * 归一化 + 在途拆分（方案 A：在库配在库、在途配在途）
+   *  - 在库为 0、在途 > 0        → 整行就是在途，生成一条在途条目
+   *  - 在库 > 0、在途 > 0、无串号 → 拆成两条：在库那条走实盘数量核对，在途那条进「在途待入库」
+   *  - 在库 > 0、在途 > 0、有串号 → 按业务确认不会出现；真出现以在库为准，
+   *                                在途数量保留在条目上（导出可见），不生成重复条目、不撞 uid
+   */
+  function normalizeAll(rows, storeId) {
+    const out = [];
+    (rows || []).forEach((r, i) => {
+      const it = normalizeItem(r, storeId, i);
+      const transitQty = it.qtyOnTransfer;
+      if (transitQty <= 0) {
+        out.push(it);
+        return;
+      }
+      if (it.qty <= 0) {
+        it.inTransit = true;
+        it.qty = transitQty; // 在途行用它自己的数量，别显示 0
+        it.inTransitInfo = { from: '账面在途列', receivingCode: '' };
+        out.push(it);
+        return;
+      }
+      // 两态并存
+      out.push(it); // 在库那条照旧
+      if (!it.hasSerial) out.push(transitTwinOf(it)); // 无串号：在途单独成条
+    });
+    return assignUids(out);
+  }
+
+  /**
+   * 盘点的「身份」标识（uid）：跨次查询稳定，不依赖报表行号 RowId。
+   *  - 有串号：主串号（任一次拉取都能对上）
+   *  - 无串号：仓库 + 商品编码 + 完整分组属性（名称/分类/标识）
+   * 同身份出现多条时，uid 追加 #2/#3 去重，并把 dupUid 标为 true；
+   * 这种「匹配不唯一」的条目在更新账面时一律不自动继承状态，交人工核实。
+   */
+  function itemUid(it) {
+    if (it.hasSerial) return 'sn:' + normCode(it.serials[0]);
+    // 无串号按商品属性；在途那条用 nst: 前缀，和「同一个商品的在库条目」区分开
+    // （方案 A：在库配在库、在途配在途，两条各自独立）
+    return (
+      (it.inTransit ? 'nst:' : 'ns:') +
+      [it.storeId, it.proId, it.cat1, it.cat2, it.cat3, it.cat4, it.name, it.tag].join('|')
+    );
+  }
+
+  /** 由在库条目派生一条「在途」条目（数量取在途数量，uid 用 nst: 前缀） */
+  function transitTwinOf(it) {
+    return {
+      key: '',
+      uid: '',
+      baseUid: '',
+      dupUid: false,
+      rowId: it.rowId + '-T',
+      storeId: it.storeId,
+      store: it.store,
+      name: it.name,
+      cat1: it.cat1,
+      cat2: it.cat2,
+      cat3: it.cat3,
+      cat4: it.cat4,
+      brand: it.brand,
+      model: it.model,
+      tag: it.tag,
+      proId: it.proId,
+      code69: it.code69,
+      priceLabel: it.priceLabel,
+      qty: it.qtyOnTransfer,
+      qtyOnTransfer: 0,
+      serials: [],
+      hasSerial: false,
+      inTransit: true,
+      inTransitInfo: { from: '账面在途列', receivingCode: '', fromTwin: true },
+      matchedCode: '',
+      matchedAt: 0,
+      extraSerialHits: [],
+      manualAt: 0,
+    };
+  }
+
+  function assignUids(items) {
+    const seen = Object.create(null);
+    const counts = Object.create(null);
+    items.forEach((it) => {
+      it.baseUid = itemUid(it);
+      counts[it.baseUid] = (counts[it.baseUid] || 0) + 1;
+    });
+    items.forEach((it) => {
+      const n = (seen[it.baseUid] = (seen[it.baseUid] || 0) + 1);
+      it.uid = n === 1 ? it.baseUid : it.baseUid + '#' + n;
+      it.dupUid = counts[it.baseUid] > 1; // 同身份有多条 → 不唯一
+      it.key = it.uid; // 所有可变状态都挂 uid，不再用 RowId
+    });
+    return items;
+  }
+
+  /** 冻结账面条目：只保留不可变字段（状态另存，便于按 uid 关联） */
+  function bookRecord(it) {
+    return {
+      inTransit: !!it.inTransit, // 在途（待入库）：账面已挂到本店，但货还没到
+      inTransitInfo: it.inTransitInfo || null, // 来源仓 / 收货单号等
+      uid: it.uid,
+      rowId: it.rowId,
+      name: it.name,
+      c1: it.cat1,
+      c2: it.cat2,
+      c3: it.cat3,
+      c4: it.cat4,
+      brand: it.brand,
+      model: it.model,
+      tag: it.tag,
+      proId: it.proId,
+      code69: it.code69,
+      priceLabel: it.priceLabel,
+      qty: it.qty,
+      qtyOnTransfer: it.qtyOnTransfer || 0,
+      serials: it.serials,
+      dupUid: it.dupUid,
+    };
+  }
+
+  function bookFromItems(items) {
+    return items.map(bookRecord);
+  }
+
+  /** 从冻结账面还原盘点条目 */
+  function itemsFromBook(book, storeId, storeName) {
+    return (book || []).map((r) => ({
+      key: r.uid,
+      uid: r.uid,
+      baseUid: r.uid.split('#')[0],
+      dupUid: !!r.dupUid,
+      rowId: r.rowId,
+      storeId: storeId,
+      store: storeName,
+      name: r.name,
+      cat1: r.c1,
+      cat2: r.c2,
+      cat3: r.c3,
+      cat4: r.c4,
+      brand: r.brand,
+      model: r.model,
+      tag: r.tag,
+      proId: r.proId,
+      code69: r.code69,
+      priceLabel: r.priceLabel,
+      qty: r.qty,
+      qtyOnTransfer: r.qtyOnTransfer || 0,
+      serials: (r.serials || []).slice(),
+      hasSerial: !!(r.serials && r.serials.length),
+      inTransit: !!r.inTransit,
+      inTransitInfo: r.inTransitInfo || null,
+      matchedCode: '',
+      matchedAt: 0,
+      extraSerialHits: [],
+      manualAt: 0,
+    }));
+  }
+
+  /**
+   * 把「在途（待入库）」行并进账面。
+   * 这些货已挂在目标门店账上但还没到店，所以必须带出来、但**不能算进"必须扫到"的应盘数**。
+   * 串号已经在在库账面上的（例如货已到、ERP 还没换状态）以在库为准，不重复加。
+   */
+  function mergeInTransit(items, transitRows, storeId, storeName) {
+    const have = new Set();
+    items.forEach((it) => it.serials.forEach((c) => have.add(normCode(c))));
+    const added = [];
+    (transitRows || []).forEach((raw, i) => {
+      const serials = [];
+      const push = (v) => {
+        const c = s(v);
+        if (c && serials.indexOf(c) < 0) serials.push(c);
+      };
+      push(raw.Imei);
+      push(raw.Imei2);
+      push(raw.Imei3);
+      s(raw.SubImei)
+        .split(/[\s,;，；]+/)
+        .forEach(push);
+      if (serials.length && serials.some((c) => have.has(normCode(c)))) return; // 已在库，跳过
+      const it = {
+        inTransit: true,
+        inTransitInfo: {
+          fromStore: s(raw.FromStoreName || raw.OutStoreName || raw.SourceStoreName || ''),
+          receivingCode: s(raw.ReceivingCode || raw.BillCode || raw.Code || ''),
+          expectDate: s(raw.ExpectDate || raw.ArrivalDate || raw.CreateTime || ''),
+        },
+        rowId: s(raw.RowId) || 'T' + (i + 1),
+        storeId: storeId,
+        store: storeName,
+        name: s(raw.ProName || raw.ProductName || raw.Name),
+        cat1: s(raw.Category1 || raw.Category),
+        cat2: s(raw.Category2),
+        cat3: s(raw.Category3),
+        cat4: s(raw.Category4),
+        brand: s(raw.Brand),
+        model: s(raw.Model),
+        tag: s(raw.OldFlag),
+        proId: s(raw.ProId || raw.ProductId),
+        code69: s(raw.SNCode),
+        priceLabel: s(raw.PriceLabel),
+        qty: num(raw.ProCount) || 1,
+        serials: serials,
+        hasSerial: serials.length > 0,
+        matchedCode: '',
+        matchedAt: 0,
+        extraSerialHits: [],
+        manualAt: 0,
+      };
+      added.push(it);
+    });
+    const all = items.concat(added);
+    assignUids(all);
+    return { items: all, added: added };
+  }
+
+  /**
+   * 比对两版账面（用于「更新账面」评审）
+   * 按 uid 关联；不唯一的条目（dupUid）一律算 ambiguous，不自动继承状态。
+   */
+  function diffBooks(oldBook, newBook) {
+    const idx = (book) => {
+      const m = new Map();
+      (book || []).forEach((r) => {
+        const base = r.uid.split('#')[0];
+        if (!m.has(base)) m.set(base, []);
+        m.get(base).push(r);
+      });
+      return m;
+    };
+    const o = idx(oldBook);
+    const n = idx(newBook);
+    const added = [];
+    const removed = [];
+    const changed = [];
+    const ambiguous = [];
+    const same = [];
+
+    n.forEach((list, base) => {
+      const oldList = o.get(base) || [];
+      if (list.length > 1 || oldList.length > 1) {
+        ambiguous.push({ base: base, oldCount: oldList.length, newCount: list.length, name: list[0].name });
+        return;
+      }
+      if (!oldList.length) {
+        added.push(list[0]);
+        return;
+      }
+      const a = oldList[0];
+      const b = list[0];
+      if (a.qty !== b.qty) changed.push({ uid: b.uid, name: b.name, oldQty: a.qty, newQty: b.qty });
+      else same.push(b);
+    });
+    o.forEach((list, base) => {
+      if (!n.has(base) && list.length === 1) removed.push(list[0]);
+    });
+    return {
+      added: added,
+      removed: removed,
+      changed: changed,
+      ambiguous: ambiguous,
+      sameCount: same.length,
+      oldCount: (oldBook || []).length,
+      newCount: (newBook || []).length,
+    };
+  }
+
+  // 扫描结果状态
+  const OK = 'ok'; // 盘到（本店账上有，首次）
+  const DUP = 'dup'; // 重复扫（该码或该机器已经盘到过）
+  const FOREIGN = 'foreign'; // 本店账上没有，但全公司别的仓库有
+  const UNKNOWN = 'unknown'; // 全公司都查不到
+
+  const STATUS_LABEL = {
+    ok: '已盘到',
+    dup: '重复扫描',
+    foreign: '非本店库存',
+    unknown: '查无此码',
+  };
+
+  /* ---------------- 盘点会话（引擎） ---------------- */
+
+  let sessionSeq = 0;
+  function newSessionId() {
+    sessionSeq++;
+    return (
+      's' +
+      Date.now().toString(36) +
+      '-' +
+      sessionSeq.toString(36) +
+      '-' +
+      Math.random().toString(36).slice(2, 6)
+    );
+  }
+
+  class Stocktake {
+    /**
+     * @param {object} opt {date, storeId, storeName, items}
+     */
+    constructor(opt) {
+      opt = opt || {};
+      this.schema = 2; // 数据格式版本
+      this.sessionId = s(opt.sessionId) || newSessionId();
+      this.date = s(opt.date);
+      this.storeId = s(opt.storeId);
+      this.storeName = s(opt.storeName);
+      this.startedAt = opt.startedAt || Date.now();
+      this.bookVersion = opt.bookVersion || 1; // 账面版本号
+      this.bookFetchedAt = opt.bookFetchedAt || 0; // 账面实际拉取时间
+      this.companycode = s(opt.companycode);
+      this.pendingReview = opt.pendingReview || []; // 更新账面后需要人工核实的条目
+      this.items = opt.items || [];
+      this.scans = []; // 扫码流水（含重复/异常）
+      this.codeHits = new Map(); // 归一化码 -> 盘点项 key
+      this.scanByCode = new Map(); // 归一化码 -> 扫描记录下标
+      this.itemByKey = new Map(); // key -> item
+      this.manualQty = Object.create(null); // 无串号商品实盘数量 key->number
+      this.remarks = Object.create(null); // 备注 key/code -> string
+      this.manualFound = Object.create(null); // 手工确认「找到了」的商品 key->{ts}
+      this.manualNotes = Object.create(null); // 手工确认备注 key->string
+      this.autoQty = Object.create(null); // 实盘数量是确认时自动带出的（撤销时该清掉）key->true
+      this.globalIndex = null; // 归一化码 -> [{store, name}]（全库索引，可选）
+      this.rebuildItemIndex();
+    }
+
+    rebuildItemIndex() {
+      this.itemByKey = new Map();
+      this.codeHits = new Map();
+      this.items.forEach((it) => {
+        this.itemByKey.set(it.key, it);
+        it.serials.forEach((c) => {
+          const k = normCode(c);
+          if (!k) return;
+          if (!this.codeHits.has(k)) this.codeHits.set(k, []);
+          const arr = this.codeHits.get(k);
+          if (arr.indexOf(it.key) < 0) arr.push(it.key);
+        });
+      });
+    }
+
+    /** 全库串号索引：用于识别"本店没有但别店有"的码 */
+    setGlobalIndex(map) {
+      this.globalIndex = map || null;
+      // 索引到位后，回填此前判为查无此码的流水
+      this.scans.forEach((sc) => {
+        if (sc.status === UNKNOWN) {
+          const owners = this.lookupGlobal(sc.code);
+          if (owners.length) {
+            sc.status = FOREIGN;
+            sc.owners = owners;
+          }
+        }
+      });
+    }
+
+    lookupGlobal(code) {
+      if (!this.globalIndex) return [];
+      const hit = this.globalIndex.get(normCode(code));
+      return hit ? hit.slice(0) : [];
+    }
+
+    /**
+     * 处理一次扫码
+     * @returns {object} 扫描结果 {status, code, item, owners, message, ...}
+     */
+    scan(rawCode, ts) {
+      const raw = s(rawCode);
+      const code = normCode(raw);
+      const time = ts || Date.now();
+      const res = { raw: raw, code: code, ts: time, item: null, owners: [] };
+
+      if (!code) {
+        res.status = UNKNOWN;
+        res.message = '空码，已忽略';
+        return res;
+      }
+
+      const prevIdx = this.scanByCode.get(code);
+      const keys = this.codeHits.get(code) || [];
+
+      if (prevIdx !== undefined) {
+        // 同一个码被扫第二次
+        const prev = this.scans[prevIdx];
+        res.status = DUP;
+        res.item = prev.item || null;
+        res.message = `重复扫描（首次 ${fmtTime(prev.ts)}）`;
+        res.owners = prev.owners || [];
+      } else if (keys.length) {
+        const it = this.itemByKey.get(keys[0]);
+        if (!it) {
+          res.status = UNKNOWN;
+          res.message = '库存项已失效';
+        } else if (it.matchedCode) {
+          // 该台机器的另一个串号已经盘到过
+          res.status = DUP;
+          res.item = it;
+          res.message = `同一台机器已盘到（本码 ${it.matchedCode}，首次 ${fmtTime(it.matchedAt)}）`;
+          it.extraSerialHits.push({ code: code, ts: time });
+        } else {
+          it.matchedCode = code;
+          it.matchedAt = time;
+          // 之前如果有手工确认，现在有扫码实证了，以扫码为准。
+          // 记录保留在 manualFound 里：万一这次扫码被撤销，手工确认还能恢复。
+          if (it.manualAt) it.manualAt = 0;
+          res.status = OK;
+          res.item = it;
+          res.message = '已盘到';
+        }
+        if (keys.length > 1) res.dupKeys = keys.slice(1);
+      } else {
+        const owners = this.lookupGlobal(code);
+        res.owners = owners;
+        if (owners.length) {
+          res.status = FOREIGN;
+          res.message = `本店账面没有该码，属于：${owners.map((o) => o.store).join('、')}`;
+        } else {
+          res.status = UNKNOWN;
+          // 索引没就绪时不能下"全公司都没有"的结论，只能说本店账面没有
+          res.message = this.globalIndex
+            ? '全公司账面均无此码'
+            : '本店账面没有该码，归属尚未核实';
+        }
+      }
+
+      const rec = {
+        code: code,
+        raw: raw,
+        ts: time,
+        status: res.status,
+        itemKey: res.item ? res.item.key : '',
+        owners: res.owners || [],
+        note: '',
+      };
+      this.scans.push(rec);
+      if (prevIdx === undefined) this.scanByCode.set(code, this.scans.length - 1);
+      res.seq = this.scans.length;
+      res.record = rec;
+      return res;
+    }
+
+    /** 撤销最后一笔扫描（不论类型：正常/重复/表外码都可撤销） */
+    undo() {
+      if (!this.scans.length) return null;
+      const last = this.scans[this.scans.length - 1];
+      return this.removeScan(this.scans.length - 1) ? last : null;
+    }
+
+    /**
+     * 用给定的流水重建盘点状态。
+     * 为什么整条重放而不是原地改：一次扫码会影响「商品是否已盘到」「是否重复」
+     * 「其它串号命中」等多处状态，重放是唯一能保证一致的做法（几百条毫秒级）。
+     */
+    replayFrom(list) {
+      this.scans = [];
+      this.scanByCode = new Map();
+      this.items.forEach((it) => {
+        it.matchedCode = '';
+        it.matchedAt = 0;
+        it.extraSerialHits = [];
+      });
+      (list || []).forEach((r) => this.scan(r.code, r.ts));
+      this.applyManualState();
+    }
+
+    /** 删除指定的一笔扫描（按流水下标）——「撤销上一扫」和逐条撤销都走这里 */
+    removeScan(index) {
+      const rec = this.scans[index];
+      if (!rec) return null;
+      const rest = this.scans.slice(0, index).concat(this.scans.slice(index + 1));
+      this.replayFrom(rest);
+      return rec;
+    }
+
+    /**
+     * 单独撤销某一台机器的扫码记录（「已扫明细」里那一行）
+     * 优先删掉让它变成「已盘到」的那次扫码；没有就删它的任意一条记录。
+     */
+    undoScanForItem(uid) {
+      let idx = this.scans.findIndex((r) => r.itemKey === uid && r.status === OK);
+      if (idx < 0) idx = this.scans.findIndex((r) => r.itemKey === uid);
+      if (idx < 0) return null;
+      return this.removeScan(idx);
+    }
+
+    /** 删掉某个码的全部扫描记录（表外码、重复扫码都能单独删）；返回删掉几条 */
+    removeCode(code) {
+      const c = normCode(code);
+      const rest = this.scans.filter((r) => r.code !== c);
+      const removed = this.scans.length - rest.length;
+      if (!removed) return 0;
+      this.replayFrom(rest);
+      return removed;
+    }
+
+    /** 清空所有扫码流水（不影响库存数据） */
+    clearScans() {
+      this.scans = [];
+      this.scanByCode = new Map();
+      this.items.forEach((it) => {
+        it.matchedCode = '';
+        it.matchedAt = 0;
+        it.extraSerialHits = [];
+      });
+    }
+
+    /* ---- 手工确认（样机没盒子、条码扫不出来时用） ---- */
+
+    /**
+     * 手工确认「找到了」：计入已盘，但不属于扫码实证，
+     * 会单独统计并可写备注（谁、为什么），便于事后追溯。
+     * 有串号的是「样机没盒子」这类；无串号的是整箱配件、促销品这类扫不了码的，
+     * 确认时实盘数量默认等于账面数量（有差异再改实盘数量）。
+     */
+    confirmFound(key, ts) {
+      const it = this.itemByKey.get(key);
+      if (!it) return null;
+      if (it.matchedCode) return null; // 已经扫码盘到，无需再手工确认
+      if (it.manualAt) return it; // 已经确认过：幂等，保留最早那次确认时间
+      const time = ts || Date.now();
+      this.manualFound[key] = { ts: time };
+      it.manualAt = time;
+      if (!it.hasSerial && this.manualQty[key] === undefined) {
+        this.manualQty[key] = it.qty; // 无串号：默认「账面的都在」
+        this.autoQty[key] = true; // 标记为自动带出，撤销时清掉；手填的数量不会被清
+      }
+      return it;
+    }
+
+    /**
+     * 一键确认：把所有「已经填了实盘数量」且还没确认的无串号商品批量标记为找到。
+     * 没填数量的一律不动（避免把没盘的当成盘过了）。
+     * @returns {Array} 被确认的条目
+     */
+    confirmAllFilledNonSerial(ts, keys) {
+      const time = ts || Date.now();
+      const pool =
+        keys && keys.length
+          ? keys.map((k) => this.itemByKey.get(k)).filter(Boolean)
+          : this.nonSerialItems();
+      const list = pool.filter(
+        (it) => !it.hasSerial && !it.manualAt && this.manualQty[it.key] !== undefined
+      );
+      list.forEach((it) => this.confirmFound(it.key, time));
+      return list;
+    }
+
+    /** 有多少无串号商品已经填了实盘数量但还没确认 */
+    pendingNonSerial() {
+      return this.nonSerialItems().filter((it) => !it.manualAt && this.manualQty[it.key] !== undefined);
+    }
+
+    /** 取消手工确认（数量若是确认时自动带出的，一并清掉；手填的保留） */
+    unconfirmFound(key) {
+      const it = this.itemByKey.get(key);
+      delete this.manualFound[key];
+      if (it) {
+        it.manualAt = 0;
+        if (this.autoQty[key]) {
+          delete this.manualQty[key];
+          delete this.autoQty[key];
+        }
+      }
+      return it;
+    }
+
+    isManualFound(key) {
+      const it = this.itemByKey.get(key);
+      return !!(it && it.manualAt);
+    }
+
+    manualNote(key) {
+      return this.manualNotes[key] || '';
+    }
+
+    setManualQty(key, value) {
+      const t = s(value);
+      if (t === '') {
+        delete this.manualQty[key];
+      } else {
+        this.manualQty[key] = num(t);
+        delete this.autoQty[key]; // 手填的，撤销确认时保留
+      }
+      return this.manualQty[key];
+    }
+
+    setManualNote(key, note) {
+      const t = s(note);
+      if (t) this.manualNotes[key] = t;
+      else delete this.manualNotes[key];
+      return t;
+    }
+
+    /** 把 manualFound 记录派生到条目上（已扫码盘到的不再算手工确认） */
+    applyManualState() {
+      this.items.forEach((it) => {
+        const rec = this.manualFound[it.key];
+        it.manualAt = rec && !it.matchedCode ? rec.ts || 0 : 0;
+      });
+    }
+
+    /* ---- 结果集 ---- */
+
+    /** 有串号且**在库**（在途的不算"必须扫到"） */
+    serialItems() {
+      return this.items.filter((it) => it.hasSerial && !it.inTransit);
+    }
+
+    /** 在途（待入库）条目：账面已挂到本店，但货还没到 */
+    inTransitItems() {
+      return this.items.filter((it) => it.inTransit);
+    }
+
+    /** 在途里已经扫到的（货实际到了） */
+    inTransitArrived() {
+      return this.items.filter((it) => it.inTransit && (it.matchedCode || it.manualAt));
+    }
+
+    /** 无串号的**在库**商品（在途那条不算：它不参与实盘数量核对） */
+    nonSerialItems() {
+      return this.items.filter((it) => !it.hasSerial && !it.inTransit);
+    }
+
+    /** 扫码盘到的 */
+    scanned() {
+      return this.items.filter((it) => it.matchedCode);
+    }
+
+    /** 手工确认且未扫码的（含有串号样机与无串号商品） */
+    manualList() {
+      return this.items.filter((it) => it.manualAt && !it.matchedCode);
+    }
+
+    /** 有串号的手工确认（用于「已盘到」的构成拆分） */
+    manualSerial() {
+      return this.items.filter((it) => it.hasSerial && it.manualAt && !it.matchedCode);
+    }
+
+    /** 无串号里已确认找到的 */
+    manualNonSerial() {
+      return this.items.filter((it) => !it.hasSerial && it.manualAt);
+    }
+
+    /** 已盘明细 = 扫码盘到 + 手工确认（含有串号与无串号） */
+    found() {
+      return this.items.filter((it) => it.matchedCode || it.manualAt);
+    }
+
+    /** 应盘未盘：在库、有串号、既没扫到也没手工确认（在途的不算，它本来就不在店里） */
+    missing() {
+      return this.items.filter((it) => it.hasSerial && !it.inTransit && !it.matchedCode && !it.manualAt);
+    }
+
+    /** 表外串号：扫到但本店账上没有的（含全公司都没有的） */
+    extras() {
+      const seen = new Map();
+      this.scans.forEach((sc, i) => {
+        if (sc.status !== FOREIGN && sc.status !== UNKNOWN) return;
+        if (seen.has(sc.code)) {
+          seen.get(sc.code).times++;
+          return;
+        }
+        seen.set(sc.code, {
+          code: sc.code,
+          raw: sc.raw,
+          ts: sc.ts,
+          status: sc.status,
+          owners: sc.owners || [],
+          times: 1,
+          seq: i,
+        });
+      });
+      return [...seen.values()];
+    }
+
+    /** 无串号商品的账实对照（手动确认找到的，实盘数量按账面计） */
+    nonSerialRows() {
+      return this.nonSerialItems().map((it) => {
+        const entered = this.manualQty[it.key];
+        let actual = entered === undefined || entered === null || entered === '' ? null : num(entered);
+        if (actual === null && it.manualAt) actual = it.qty; // 确认找到 = 账面的都在
+        return {
+          item: it,
+          book: it.qty,
+          actual: actual,
+          diff: actual === null ? null : actual - it.qty,
+          confirmed: !!it.manualAt,
+          remark: this.remarks[it.key] || '',
+        };
+      });
+    }
+
+    /** 这个会话是否有值得保存/恢复的内容（只看扫码是不够的） */
+    hasContent() {
+      return !!(
+        this.scans.length ||
+        Object.keys(this.manualQty).length ||
+        Object.keys(this.manualFound).length ||
+        Object.keys(this.manualNotes).length ||
+        Object.keys(this.remarks).length ||
+        this.pendingReview.length
+      );
+    }
+
+    stats() {
+      const serial = this.serialItems(); // 只含在库（不含在途）
+      // 「应盘 / 已盘 / 进度」只统计在库且有串号的机器；
+      // 在途（待入库）与无串号商品各自单独统计，不混进进度
+      const transit = this.inTransitItems();
+      const transitArrived = this.inTransitArrived();
+      const found = serial.filter((it) => it.matchedCode || it.manualAt);
+      const scanned = serial.filter((it) => it.matchedCode);
+      const manual = this.manualSerial();
+      const extraList = this.extras();
+      const nonSerial = this.nonSerialItems();
+      const nsRows = this.nonSerialRows();
+      const nsCounted = nsRows.filter((r) => r.actual !== null);
+      const bookNonSerial = nonSerial.reduce((a, it) => a + it.qty, 0);
+      // 无串号商品的差异只比较「已经盘过的行」，未盘的行不参与，
+      // 否则盘到一半会显示成大面积盘亏，容易误判。
+      const nsBookCounted = nsCounted.reduce((a, r) => a + r.book, 0);
+      const nsActual = nsCounted.reduce((a, r) => a + (r.actual || 0), 0);
+      return {
+        shouldCount: serial.length, // 应盘（有串号件数）
+        foundCount: found.length, // 已盘（扫码 + 手工确认）
+        scannedCount: scanned.length, // 其中：扫码盘到
+        manualCount: manual.length, // 其中：手工确认
+        missingCount: serial.length - found.length, // 未盘
+        progress: serial.length ? Math.round((found.length / serial.length) * 1000) / 10 : 0,
+        extraCount: extraList.length, // 表外码（去重）
+        extraScans: extraList.reduce((a, r) => a + r.times, 0),
+        dupCount: this.scans.filter((x) => x.status === DUP).length,
+        totalScans: this.scans.length,
+        nonSerialRows: nonSerial.length,
+        nonSerialBook: bookNonSerial, // 无串号商品账面合计
+        nonSerialCounted: nsCounted.length, // 已手工盘过的行数
+        nonSerialBookCounted: nsBookCounted, // 已盘部分的账面数
+        nonSerialActual: nsActual, // 已盘部分的实盘数
+        nonSerialDiff: nsActual - nsBookCounted, // 已盘部分差异
+        inTransitCount: transit.length,
+        inTransitArrivedCount: transitArrived.length,
+        bookTotal: this.items.reduce((a, it) => a + it.qty, 0), // 含在途
+        bookOnHand: this.items.filter((it) => !it.inTransit).reduce((a, it) => a + it.qty, 0),
+        bookSerial: serial.length,
+      };
+    }
+
+    /* ---- 序列化（用于本地续盘） ---- */
+
+    toJSON() {
+      return {
+        v: 2,
+        schema: 2,
+        sessionId: this.sessionId,
+        companycode: this.companycode,
+        bookVersion: this.bookVersion,
+        bookFetchedAt: this.bookFetchedAt,
+        date: this.date,
+        storeId: this.storeId,
+        storeName: this.storeName,
+        startedAt: this.startedAt,
+        pendingReview: this.pendingReview,
+        scans: this.scans.map((r) => ({ code: r.code, ts: r.ts, note: r.note || '' })),
+        manualQty: this.manualQty,
+        remarks: this.remarks,
+        manualFound: this.manualFound,
+        manualNotes: this.manualNotes,
+        autoQty: this.autoQty,
+      };
+    }
+
+    /** 用保存的流水恢复盘点状态（先在新的库存数据上重放） */
+    restore(data) {
+      if (!data) return;
+      this.startedAt = data.startedAt || this.startedAt;
+      if (data.sessionId) this.sessionId = data.sessionId;
+      if (data.companycode) this.companycode = data.companycode;
+      if (data.bookVersion) this.bookVersion = data.bookVersion;
+      if (data.bookFetchedAt) this.bookFetchedAt = data.bookFetchedAt;
+      if (Array.isArray(data.pendingReview)) this.pendingReview = data.pendingReview.slice();
+      this.manualQty = Object.assign(Object.create(null), data.manualQty || {});
+      this.remarks = Object.assign(Object.create(null), data.remarks || {});
+      this.manualFound = Object.assign(Object.create(null), data.manualFound || {});
+      this.manualNotes = Object.assign(Object.create(null), data.manualNotes || {});
+      this.autoQty = Object.assign(Object.create(null), data.autoQty || {});
+      this.applyManualState();
+      (data.scans || []).forEach((r) => {
+        const res = this.scan(r.code, r.ts);
+        if (res.record && r.note) res.record.note = r.note;
+      });
+      // 扫码重放可能把手工确认升级成扫码实证，同步一次
+      this.applyManualState();
+    }
+  }
+
+  /* ---------------- CSV 导出 ---------------- */
+
+  function csvCell(v) {
+    const t = v === null || v === undefined ? '' : String(v);
+    return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+  }
+
+  function toCSV(rows) {
+    return rows.map((r) => r.map(csvCell).join(',')).join('\r\n');
+  }
+
+  IC.core = {
+    s,
+    num,
+    normCode,
+    fmtTime,
+    todayStr,
+    normalizeItem,
+    normalizeAll,
+    assignUids,
+    itemUid,
+    transitTwinOf,
+    bookRecord,
+    bookFromItems,
+    itemsFromBook,
+    mergeInTransit,
+    diffBooks,
+    Stocktake,
+    newSessionId,
+    toCSV,
+    STATUS: { OK, DUP, FOREIGN, UNKNOWN },
+    STATUS_LABEL,
+  };
+})();
+
+    </script>
+    <script>
+      /* 库存盘点 - 云商 ERP 接口客户端（无依赖）
+ * 归入 globalThis.IC.erp
+ *
+ * 接口来源：erp.yserp.cc 报表页 322.chunk / 登录组件
+ *  - 仓库列表：POST https://apicommon.yserp.cc/API/USER/STORE
+ *  - 库存查询：POST https://apireport.yserp.cc/api/supplier/RptStoreNow
+ *  - 账号登录：POST https://api.yserp.cc/api/User/Login
+ * 都回显请求 Origin，因此本地 file:// 打开的单文件页面可直接调用。
+ */
+globalThis.IC = globalThis.IC || {};
+(function () {
+  const IC = globalThis.IC;
+  const core = IC.core;
+
+  // 不带任何内置凭证：token / 商家编码 / 用户名都必须由使用者登录后获得，
+  // 或者由使用者自己填入（见 UI 的「账号密码登录」）。
+  const DEFAULT_CFG = {
+    token: '',
+    companycode: '',
+    username: '',
+    reportBase: 'https://apireport.yserp.cc/',
+    commonBase: 'https://apicommon.yserp.cc/',
+    loginBase: 'https://api.yserp.cc/',
+    timeout: 90000,
+    pageSize: 30000,
+  };
+
+  /** 配置是否完整到可以发业务请求 */
+  function isConfigured(cfg) {
+    return !!(cfg && cfg.token && cfg.companycode);
+  }
+
+  /** 配置不完整就别发请求，直接给出可执行的提示 */
+  function assertConfigured(cfg) {
+    if (!cfg || !cfg.token) {
+      const e = new Error('还没有登录：请用 ERP 账号密码登录后再拉取库存');
+      e.notConfigured = true;
+      throw e;
+    }
+    if (!cfg.companycode) {
+      const e = new Error('缺少商家编码：请重新登录（登录会自动带出商家编码），或手动填写');
+      e.notConfigured = true;
+      throw e;
+    }
+    return true;
+  }
+
+  // 报表分组字段（与 ERP 页面一致，决定返回哪些列）
+  const GROUP_BY =
+    'Store,Category1,Category2,Category3,Brand,Model,ProName,OldFlag,Category4,Imei,Imei2,Imei3,ProId,SNCode,PriceLabel';
+
+  function headers(cfg) {
+    const h = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json, text/plain, */*',
+      Authorization: 'Bearer ' + (cfg.token || ''),
+      traceId: randHex(32),
+    };
+    if (cfg.companycode) h.companycode = cfg.companycode;
+    if (cfg.username) h.username = encodeURIComponent(cfg.username);
+    return h;
+  }
+
+  function randHex(n) {
+    let out = '';
+    for (let i = 0; i < n; i++) out += '0123456789abcdef'[(Math.random() * 16) | 0];
+    return out;
+  }
+
+  // 登录失效能被识别出来（ResponseID 1/9 = 未登录或登录超时），
+  // 界面据此用保存的账号密码自动重新登录
+  function tokenError(message) {
+    const e = new Error(message || '登录已失效');
+    e.tokenExpired = true;
+    e.code = 1;
+    return e;
+  }
+
+  /** 数据不完整的统一错误：带标记便于调用方区分「没拉全」和「接口报错」 */
+  function incomplete(what, detail) {
+    const e = new Error(`${what}：数据不完整，已阻止开始盘点 —— ${detail}`);
+    e.incomplete = true;
+    e.detail = detail;
+    return e;
+  }
+
+  async function request(cfg, url, opt) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), cfg.timeout || 90000);
+    let resp;
+    try {
+      resp = await fetch(url, {
+        method: opt.method || 'POST',
+        headers: opt.headers,
+        body: opt.body,
+        signal: ctrl.signal,
+      });
+    } catch (e) {
+      clearTimeout(timer);
+      if (e && e.name === 'AbortError')
+        throw new Error('请求超时（' + (cfg.timeout || 90000) / 1000 + ' 秒），请检查网络后重试');
+      throw new Error('网络请求失败：' + (e && e.message ? e.message : e) + '（请确认能打开 erp.yserp.cc）');
+    }
+    clearTimeout(timer);
+    const text = await resp.text();
+    if (!resp.ok) throw new Error('接口返回 HTTP ' + resp.status + '：' + text.slice(0, 200));
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch (e) {
+      throw new Error('接口返回内容无法解析：' + text.slice(0, 200));
+    }
+    return json;
+  }
+
+  async function post(cfg, url, body) {
+    const json = await request(cfg, url, {
+      headers: headers(cfg),
+      body: JSON.stringify(body),
+    });
+    const rid = Number(json.ResponseID);
+    if (rid === 1 || rid === 9) throw tokenError(json.Message || '未登录或登录超时');
+    // 与 ERP 前端一致：只有 ResponseID=0 算成功，其余一律当失败，避免把异常响应当数据用
+    if (json.is_error === 'true' || json.is_error === true || rid !== 0) {
+      throw new Error(
+        '接口报错：' + (json.Message || json.return_message || '未知错误') + (Number.isFinite(rid) ? '（ResponseID=' + rid + '）' : '')
+      );
+    }
+    return json;
+  }
+
+  /**
+   * 账号密码登录换取 token
+   * 接口契约（来自 ERP 登录组件）：
+   *   请求 POST api/User/Login，表单参数 {token:'', userName, userPwd, VCode?}
+   *   成功 ResponseID=0，Data.token 即后续要用的 token
+   *   需要验证码时 ResponseID=2，Data 是 data:image/png;base64,... 验证码图片
+   * @returns {Promise<{token:string, data:object}>}
+   * @throws {Error} 带 needCaptcha / captcha(dataURL) / needRegister 标记
+   */
+  async function login(cfg, cred) {
+    const c = Object.assign({}, DEFAULT_CFG, cfg);
+    const form = new URLSearchParams();
+    form.set('token', '');
+    form.set('userName', core.s(cred.userName));
+    form.set('userPwd', core.s(cred.userPwd));
+    if (core.s(cred.VCode)) form.set('VCode', core.s(cred.VCode));
+
+    const json = await request(c, c.loginBase + 'api/User/Login', {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json, text/plain, */*',
+      },
+      body: form.toString(),
+    });
+
+    const rid = Number(json.ResponseID);
+    const data = json.Data;
+    if (rid === 0) {
+      const token =
+        (data && typeof data === 'object' && (data.token || data.Token)) ||
+        (typeof data === 'string' ? data : '');
+      if (!token) {
+        const e = new Error('登录成功但接口没有返回 token');
+        e.raw = json;
+        throw e;
+      }
+      return { token: token, data: data || {} };
+    }
+
+    const err = new Error(json.Message || '登录失败');
+    err.code = rid;
+    if (data && typeof data === 'object' && data.Status) {
+      // 该账号需要走注册/审核流程
+      err.needRegister = true;
+      err.raw = data;
+    } else if (typeof data === 'string' && /^data:image\//.test(data)) {
+      err.needCaptcha = true;
+      err.captcha = data;
+    }
+    err.raw = json;
+    throw err;
+  }
+
+
+  /**
+   * 用 token 拉用户资料：登录后用它自动带出商家编码、用户名，
+   * 所以使用者只需要输账号密码，不需要知道 companycode。
+   * 实测该接口在没有 companycode 请求头时也能正常返回。
+   */
+  async function fetchUserIndex(cfg) {
+    const c = Object.assign({}, DEFAULT_CFG, cfg);
+    const json = await post(c, c.loginBase + 'Api/User/UserIndex', { token: c.token });
+    const d = json.Data || {};
+    return {
+      companycode: core.s(d.CompanyCode),
+      username: core.s(d.Real) || core.s(d.UserName),
+      loginName: core.s(d.UserName),
+      raw: d,
+    };
+  }
+
+  /** 拉取仓库（分仓）列表 -> [{id, name, branchName, branchId}] */
+  async function fetchWarehouses(cfg) {
+    const c = Object.assign({}, DEFAULT_CFG, cfg);
+    assertConfigured(c);
+    const json = await post(c, c.commonBase + 'API/USER/STORE', {
+      token: c.token,
+      DataPower: 1,
+      StoreCheckPower: '',
+    });
+    const list = Array.isArray(json.Data) ? json.Data : [];
+    return list
+      .map((x) => ({
+        id: String(x.Id),
+        name: core.s(x.Name),
+        branchName: core.s(x.BranchName),
+        branchId: core.s(x.BranchId),
+      }))
+      .filter((x) => x.id && x.name)
+      .sort((a, b) => a.id.localeCompare(b.id));
+  }
+
+  function buildQuery(cfg, opt) {
+    return {
+      token: cfg.token,
+      BranchId: opt.branchId || '',
+      DateOfSnapshot: opt.date,
+      StoreIds: opt.storeId ? String(opt.storeId) : '',
+      CustomerId: '',
+      vendorIds: '',
+      CategoryId: '',
+      ProName: opt.proName || '',
+      Brands: '',
+      Models: '',
+      Config: '',
+      Imei: opt.imei || '',
+      SubImei: '',
+      groupBy: GROUP_BY,
+      // 同时取「在库数量」和「在途数量」：
+      // 列名 ProCount_OnTransfer 来自报表列配置接口 /Api/RoleMenu/RoleRptCol（RptId=100 就是这张库存表），
+      // ERP 前端在查"今天"时会保留这列、查历史快照时才把它剔除。
+      outCol: 'ProCount,ProCount_OnTransfer',
+      Sort: '',
+      OrderBy: '',
+      PriceLabelIdStr: '',
+      PageSize: opt.pageSize || cfg.pageSize,
+      PageIndex: opt.pageIndex || 1,
+    };
+  }
+
+  /**
+   * 分页拉取库存明细
+   * @param {object} opt {date, storeId, pageSize, onProgress(done,total), maxPages}
+   * @returns {Promise<{rows:Array, totalRows:number, pages:number}>}
+   */
+  async function fetchInventory(cfg, opt) {
+    const c = Object.assign({}, DEFAULT_CFG, cfg);
+    assertConfigured(c);
+    opt = opt || {};
+    const pageSize = opt.pageSize || c.pageSize;
+    const maxPages = opt.maxPages || 40;
+    const what = opt.label || '库存查询';
+    const rows = [];
+    const pageFingerprints = new Set();
+    let pageIndex = 1;
+    let totalRows = null;
+    let pages = 0;
+
+    for (;;) {
+      const json = await post(
+        c,
+        c.reportBase + 'api/supplier/RptStoreNow',
+        buildQuery(c, {
+          date: opt.date,
+          storeId: opt.storeId,
+          branchId: opt.branchId,
+          proName: opt.proName,
+          imei: opt.imei,
+          pageSize: pageSize,
+          pageIndex: pageIndex,
+        })
+      );
+
+      // ---- 1. 响应结构校验 ----
+      const data = json.Data;
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw incomplete(what, `第 ${pageIndex} 页返回结构异常：Data 不是对象`);
+      }
+      if (!Array.isArray(data.Data)) {
+        throw incomplete(what, `第 ${pageIndex} 页返回结构异常：Data.Data 不是明细数组`);
+      }
+      const batch = data.Data;
+      const tr = Number(data.TotalRows);
+      if (!Number.isFinite(tr) || tr < 0) {
+        throw incomplete(what, `第 ${pageIndex} 页的 TotalRows 不合法：${JSON.stringify(data.TotalRows)}`);
+      }
+
+      // ---- 2. 总行数一致性 ----
+      if (totalRows === null) {
+        totalRows = tr;
+        // 合法的零库存：总行数 0 且确实没有明细
+        if (totalRows === 0) {
+          if (batch.length !== 0) {
+            throw incomplete(what, `声称总行数为 0，却返回了 ${batch.length} 行明细`);
+          }
+          return { rows: [], totalRows: 0, pages: 1, empty: true };
+        }
+      } else if (tr !== totalRows) {
+        throw incomplete(
+          what,
+          `分页过程中总行数发生变化（第 1 页 ${totalRows} → 第 ${pageIndex} 页 ${tr}），账面正在变动，请重新拉取`
+        );
+      }
+
+      // ---- 3. 提前空页 ----
+      if (batch.length === 0) {
+        throw incomplete(
+          what,
+          `第 ${pageIndex} 页返回空，但只收到 ${rows.length}/${totalRows} 行，数据没拉全`
+        );
+      }
+
+      // ---- 4. 重复页 ----
+      const fp = batch.length + '|' + core.s(batch[0].RowId) + '|' + core.s(batch[batch.length - 1].RowId);
+      if (pageFingerprints.has(fp)) {
+        throw incomplete(what, `第 ${pageIndex} 页与前面某页内容重复，分页异常`);
+      }
+      pageFingerprints.add(fp);
+
+      rows.push.apply(rows, batch);
+      pages++;
+
+      if (rows.length > totalRows) {
+        throw incomplete(what, `返回行数（${rows.length}）超过总行数（${totalRows}）`);
+      }
+      if (opt.onProgress) {
+        try {
+          opt.onProgress(rows.length, totalRows);
+        } catch (e) {
+          /* 忽略回调异常 */
+        }
+      }
+      if (rows.length === totalRows) break;
+
+      // ---- 5. 分页上限 ----
+      if (pages >= maxPages) {
+        throw incomplete(what, `达到分页上限（${maxPages} 页）仍未拉全：${rows.length}/${totalRows}`);
+      }
+      pageIndex++;
+    }
+
+    // ---- 6. 最终核对 ----
+    if (rows.length !== totalRows) {
+      throw incomplete(what, `只拉到 ${rows.length} 行，应有 ${totalRows} 行`);
+    }
+    return { rows: rows, totalRows: totalRows, pages: pages, empty: false };
+  }
+
+  /**
+   * 拉取「在途（待入库）」清单
+   *
+   * 契约来自 ERP 自己的「库存明细」页面代码：
+   *   curAPI = "Api/Report/InventoryImei"
+   *   search.InventoryType 取值：0=在库、1=在途（页面上的「在库/在途」开关）
+   *   search 里还有 StoreId / StoreName / DateOfSnapshot / ReceivingCode（收货单号）等
+   *
+   * 说明：这条链路目前**没有用真实凭证验证过**（token 失效期间无法联调），
+   * 所以这里做了三件事兜底：
+   *   1) 只认真实返回的数组，形状不对就明确报错，绝不悄悄当成"没有在途"；
+   *   2) 拿到结果后再按仓库名/仓库 ID 过滤一次，防止接口忽略过滤条件时把别仓的混进来；
+   *   3) 调用方失败时只提示、不阻断盘点。
+   */
+  async function fetchInTransit(cfg, opt) {
+    const c = Object.assign({}, DEFAULT_CFG, cfg);
+    assertConfigured(c);
+    opt = opt || {};
+    const pageSize = opt.pageSize || 500;
+    const rows = [];
+    let pageIndex = 1;
+    let totalRows = null;
+    const maxPages = opt.maxPages || 20;
+
+    for (;;) {
+      const json = await post(c, c.reportBase + 'Api/Report/InventoryImei', {
+        token: c.token,
+        InventoryType: 1, // 1 = 在途
+        DateOfSnapshot: opt.date || '',
+        StoreId: opt.storeId ? String(opt.storeId) : '',
+        StoreName: opt.storeName || '',
+        BranchId: opt.branchId || '',
+        BranchName: opt.branchName || '',
+        ProName: '',
+        Category: '',
+        IsBorrowed: '',
+        old: '',
+        Imei: '',
+        ReceivingCode: '',
+        WarningFlag: false,
+        PageIndex: pageIndex,
+        PageSize: pageSize,
+      });
+
+      const data = json.Data;
+      let batch = null;
+      if (Array.isArray(data)) batch = data;
+      else if (data && Array.isArray(data.Data)) batch = data.Data;
+      if (!batch) {
+        const e = new Error('在途查询：返回结构异常，既不是数组也没有 Data.Data 数组');
+        e.incomplete = true;
+        throw e;
+      }
+      const tr = data && typeof data === 'object' && !Array.isArray(data) ? Number(data.TotalRows) : NaN;
+      if (totalRows === null && Number.isFinite(tr)) totalRows = tr;
+
+      rows.push.apply(rows, batch);
+      if (!batch.length || batch.length < pageSize) break;
+      if (Number.isFinite(totalRows) && rows.length >= totalRows) break;
+      if (pageIndex >= maxPages) break;
+      pageIndex++;
+    }
+
+    // 防御性过滤：只保留确实属于这个仓的在途
+    const storeId = core.s(opt.storeId);
+    const storeName = core.s(opt.storeName);
+    const kept = [];
+    let droppedByStore = 0;
+    rows.forEach((r) => {
+      const sid = core.s(r.StoreId || r.storeId);
+      const sname = core.s(r.StoreName || r.Store || r.storeName);
+      const matchId = storeId && sid && sid === storeId;
+      const matchName = storeName && sname && sname === storeName;
+      // 接口没带仓库信息时不做丢弃（宁可多展示，也不漏）
+      if (!sid && !sname) {
+        kept.push(r);
+        return;
+      }
+      if (matchId || matchName) kept.push(r);
+      else droppedByStore++;
+    });
+
+    return { rows: kept, fetched: rows.length, droppedByStore: droppedByStore, totalRows: totalRows };
+  }
+
+  /**
+   * 拉取全公司串号索引（用于判断"这个码在哪个仓"）
+   * @returns {Promise<Map<string, Array<{store:string,name:string}>>>}
+   */
+  async function fetchGlobalIndex(cfg, opt) {
+    opt = opt || {};
+    const res = await fetchInventory(cfg, {
+      date: opt.date,
+      storeId: '',
+      pageSize: 30000,
+      label: '全库索引',
+      onProgress: opt.onProgress,
+    });
+    const map = new Map();
+    res.rows.forEach((raw) => {
+      const store = core.s(raw.Store);
+      const name = core.s(raw.ProName);
+      const it = core.normalizeItem(raw, '', 0);
+      it.serials.forEach((code) => {
+        const k = core.normCode(code);
+        if (!k) return;
+        if (!map.has(k)) map.set(k, []);
+        const arr = map.get(k);
+        if (!arr.some((x) => x.store === store)) arr.push({ store: store, name: name });
+      });
+    });
+    return map;
+  }
+
+  IC.erp = {
+    DEFAULT_CFG,
+    GROUP_BY,
+    isConfigured,
+    assertConfigured,
+    fetchUserIndex,
+    post,
+    request,
+    login,
+    tokenError,
+    incomplete,
+    isTokenError: (e) => !!(e && e.tokenExpired),
+    isIncomplete: (e) => !!(e && e.incomplete),
+    fetchWarehouses,
+    fetchInventory,
+    fetchInTransit,
+    fetchGlobalIndex,
+  };
+})();
+
+    </script>
+    <script>
+      /* 库存盘点 - 会话持久化（冻结账面 + 可变状态分开存）
+ * 归入 globalThis.IC.store
+ *
+ * 为什么要拆开：
+ *  - 账面（book）在一次盘点里是不变的，建账/更新账面时才写一次，可能是几百 KB ~ 1MB；
+ *  - 状态（state：扫码、实盘数、确认、备注）每次操作都要写，必须很小。
+ * 合在一起会导致"每扫一次码就序列化并写入 1MB"，既卡顿又更容易触发配额上限。
+ *
+ * 存储键：
+ *  ic.book.v2    当前会话的冻结账面
+ *  ic.book.prev  上一版账面（更新账面时保留，可回滚）
+ *  ic.state.v2   可变状态（含指向的 sessionId / bookVersion）
+ *  ic.legacy.v1  从旧版本迁过来的原始数据（只保留备份，不参与恢复）
+ */
+globalThis.IC = globalThis.IC || {};
+(function () {
+  const IC = globalThis.IC;
+
+  const KEYS = {
+    book: 'ic.book.v2',
+    bookPrev: 'ic.book.prev.v2',
+    state: 'ic.state.v2',
+    legacy: 'ic.legacy.v1',
+    legacySession: 'ic.session.v1',
+    cfg: 'ic.cfg.v2',
+  };
+
+  const status = {
+    lastSaveAt: 0,
+    lastError: '',
+    lastKind: '', // book | state
+  };
+
+  function raw() {
+    try {
+      return globalThis.localStorage || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /** 存储是否可用（有些环境禁用 localStorage） */
+  function available() {
+    const ls = raw();
+    if (!ls) return false;
+    try {
+      ls.setItem('__ic_probe', '1');
+      ls.removeItem('__ic_probe');
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function readJSON(key) {
+    const ls = raw();
+    if (!ls) return null;
+    try {
+      const t = ls.getItem(key);
+      return t ? JSON.parse(t) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /** 写：失败一定抛出（配额/禁用），由界面明确告知使用者 */
+  function writeJSON(key, value) {
+    const ls = raw();
+    if (!ls) {
+      const e = new Error('浏览器禁用了本地存储，无法保存盘点进度');
+      e.storage = 'unavailable';
+      throw e;
+    }
+    const text = JSON.stringify(value);
+    try {
+      ls.setItem(key, text);
+      status.lastSaveAt = Date.now();
+      status.lastError = '';
+      return text.length;
+    } catch (e) {
+      const name = (e && e.name) || '';
+      // 区分三种情况，界面提示要能指导下一步动作
+      let kind = 'error';
+      let msg = '保存失败：' + ((e && e.message) || '未知原因');
+      if (name === 'QuotaExceededError' || name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+        kind = 'quota';
+        msg = '本机存储空间不足，盘点进度没能保存';
+      } else if (name === 'SecurityError' || name === 'InvalidStateError' || /denied|disabled|blocked/i.test((e && e.message) || '')) {
+        kind = 'unavailable';
+        msg = '浏览器禁用了本地存储（隐私模式或站点设置），盘点进度无法保存';
+      }
+      status.lastError = kind === 'quota' ? '配额不足' : kind === 'unavailable' ? '存储被禁用' : (e && e.message) || '写入失败';
+      const err = new Error(msg);
+      err.storage = kind;
+      err.cause = e;
+      throw err;
+    }
+  }
+
+  function remove(key) {
+    const ls = raw();
+    if (!ls) return;
+    try {
+      ls.removeItem(key);
+    } catch (e) {
+      /* 忽略 */
+    }
+  }
+
+  /* ---------------- 账面 ---------------- */
+
+  /**
+   * 保存冻结账面
+   * @param {object} book {sessionId, companycode, storeId, storeName, date, version, fetchedAt, items:[...]}
+   */
+  function saveBook(book) {
+    const payload = Object.assign({}, book, { savedAt: Date.now() });
+    const size = writeJSON(KEYS.book, payload);
+    status.lastKind = 'book';
+    return size;
+  }
+
+  function loadBook() {
+    return readJSON(KEYS.book);
+  }
+
+  /** 把当前账面挪到「上一版」并写入新账面（更新账面时用，可回滚） */
+  function replaceBook(book) {
+    const cur = loadBook();
+    if (cur) writeJSON(KEYS.bookPrev, Object.assign({}, cur, { archivedAt: Date.now() }));
+    return saveBook(book);
+  }
+
+  function loadPrevBook() {
+    return readJSON(KEYS.bookPrev);
+  }
+
+  function clearBook() {
+    remove(KEYS.book);
+    remove(KEYS.bookPrev);
+  }
+
+  /* ---------------- 状态 ---------------- */
+
+  function saveState(state) {
+    const size = writeJSON(KEYS.state, Object.assign({}, state, { savedAt: Date.now() }));
+    status.lastKind = 'state';
+    return size;
+  }
+
+  function loadState() {
+    return readJSON(KEYS.state);
+  }
+
+  function clearState() {
+    remove(KEYS.state);
+  }
+
+  /** 状态是否属于给定的会话与账面版本 */
+  function stateMatches(state, sessionId, bookVersion) {
+    if (!state) return false;
+    if (state.sessionId !== sessionId) return false;
+    if (bookVersion !== undefined && state.bookVersion !== bookVersion) return false;
+    return true;
+  }
+
+  /* ---------------- 旧版本迁移 ---------------- */
+
+  /** 读取旧版（本书面账缺失）记录，读完挪到备份键，不再参与恢复 */
+  function takeLegacy() {
+    const old = readJSON(KEYS.legacySession);
+    if (!old) return null;
+    try {
+      writeJSON(KEYS.legacy, { migratedAt: Date.now(), data: old });
+      remove(KEYS.legacySession);
+    } catch (e) {
+      /* 备份失败也别删原数据 */
+    }
+    return old;
+  }
+
+  function loadLegacyBackup() {
+    return readJSON(KEYS.legacy);
+  }
+
+  /* ---------------- 备份下载 / 用量 ---------------- */
+
+  function bytesOf(key) {
+    const ls = raw();
+    if (!ls) return 0;
+    try {
+      const t = ls.getItem(key);
+      return t ? t.length : 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function usage() {
+    return {
+      book: bytesOf(KEYS.book),
+      bookPrev: bytesOf(KEYS.bookPrev),
+      state: bytesOf(KEYS.state),
+      legacy: bytesOf(KEYS.legacy),
+    };
+  }
+
+  /** 会话备份（账面 + 状态 + 统计），存不下来时让使用者先下载保命 */
+  function buildBackup(session) {
+    return {
+      kind: 'inventory-check-backup',
+      schema: 2,
+      exportedAt: new Date().toISOString(),
+      session: session || null,
+    };
+  }
+
+  function safeName(s) {
+    return String(s || '').replace(/[\\/:*?"<>|]/g, '_');
+  }
+
+  IC.store = {
+    KEYS,
+    status,
+    available,
+    saveBook,
+    loadBook,
+    replaceBook,
+    loadPrevBook,
+    clearBook,
+    saveState,
+    loadState,
+    clearState,
+    stateMatches,
+    takeLegacy,
+    loadLegacyBackup,
+    usage,
+    buildBackup,
+    safeName,
+    readJSON,
+    writeJSON,
+    remove,
+  };
+})();
+
+    </script>
+    <script>
+      /* 库存盘点 - 最小 xlsx 导出器（零依赖，手写 ZIP + OOXML）
+ * 归入 globalThis.IC.xlsx
+ * 不压缩（STORE），Excel / WPS 均可正常打开。
+ */
+globalThis.IC = globalThis.IC || {};
+(function () {
+  const IC = globalThis.IC;
+
+  /* ---------- XML 转义 ---------- */
+  function esc(v) {
+    return String(v === null || v === undefined ? '' : v)
+      .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
+  }
+
+  /* ---------- 列号 ---------- */
+  function colName(n) {
+    let s = '';
+    n += 1;
+    while (n > 0) {
+      const m = (n - 1) % 26;
+      s = String.fromCharCode(65 + m) + s;
+      n = Math.floor((n - 1) / 26);
+    }
+    return s;
+  }
+
+  /* ---------- CRC32 ---------- */
+  const CRC_TABLE = (() => {
+    const t = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+      let c = i;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      t[i] = c >>> 0;
+    }
+    return t;
+  })();
+
+  function crc32(bytes) {
+    let c = 0xffffffff;
+    for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xff] ^ (c >>> 8);
+    return (c ^ 0xffffffff) >>> 0;
+  }
+
+  const enc = new TextEncoder();
+
+  function dosDateTime(d) {
+    const time = ((d.getHours() & 31) << 11) | ((d.getMinutes() & 63) << 5) | ((d.getSeconds() / 2) & 31);
+    const date = (((d.getFullYear() - 1980) & 127) << 9) | (((d.getMonth() + 1) & 15) << 5) | (d.getDate() & 31);
+    return { time: time, date: date };
+  }
+
+  /** 打包 ZIP（STORE 模式）entries: [{name, data:Uint8Array}] */
+  function zip(entries) {
+    const now = dosDateTime(new Date());
+    const chunks = [];
+    const central = [];
+    let offset = 0;
+
+    entries.forEach((e) => {
+      const nameBytes = enc.encode(e.name);
+      const data = e.data;
+      const crc = crc32(data);
+
+      const local = new Uint8Array(30 + nameBytes.length);
+      const lv = new DataView(local.buffer);
+      lv.setUint32(0, 0x04034b50, true); // 签名
+      lv.setUint16(4, 20, true); // 版本
+      lv.setUint16(6, 0, true); // 标志
+      lv.setUint16(8, 0, true); // 压缩方法 = 0 (store)
+      lv.setUint16(10, now.time, true);
+      lv.setUint16(12, now.date, true);
+      lv.setUint32(14, crc, true);
+      lv.setUint32(18, data.length, true);
+      lv.setUint32(22, data.length, true);
+      lv.setUint16(26, nameBytes.length, true);
+      lv.setUint16(28, 0, true);
+      local.set(nameBytes, 30);
+
+      chunks.push(local, data);
+
+      const cen = new Uint8Array(46 + nameBytes.length);
+      const cv = new DataView(cen.buffer);
+      cv.setUint32(0, 0x02014b50, true);
+      cv.setUint16(4, 20, true);
+      cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0, true);
+      cv.setUint16(10, 0, true);
+      cv.setUint16(12, now.time, true);
+      cv.setUint16(14, now.date, true);
+      cv.setUint32(16, crc, true);
+      cv.setUint32(20, data.length, true);
+      cv.setUint32(24, data.length, true);
+      cv.setUint16(28, nameBytes.length, true);
+      cv.setUint16(30, 0, true);
+      cv.setUint16(32, 0, true);
+      cv.setUint16(34, 0, true);
+      cv.setUint16(36, 0, true);
+      cv.setUint32(38, 0, true);
+      cv.setUint32(42, offset, true);
+      cen.set(nameBytes, 46);
+      central.push(cen);
+
+      offset += local.length + data.length;
+    });
+
+    const centralSize = central.reduce((a, c) => a + c.length, 0);
+    const end = new Uint8Array(22);
+    const ev = new DataView(end.buffer);
+    ev.setUint32(0, 0x06054b50, true);
+    ev.setUint16(4, 0, true);
+    ev.setUint16(6, 0, true);
+    ev.setUint16(8, entries.length, true);
+    ev.setUint16(10, entries.length, true);
+    ev.setUint32(12, centralSize, true);
+    ev.setUint32(16, offset, true);
+    ev.setUint16(20, 0, true);
+
+    const all = chunks.concat(central, [end]);
+    const total = all.reduce((a, c) => a + c.length, 0);
+    const out = new Uint8Array(total);
+    let p = 0;
+    all.forEach((c) => {
+      out.set(c, p);
+      p += c.length;
+    });
+    return out;
+  }
+
+  /* ---------- 工作表 XML ---------- */
+  function sheetXml(sheet) {
+    const rows = sheet.rows || [];
+    const widths = sheet.widths || [];
+    const out = [];
+    out.push('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>');
+    out.push(
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0">' +
+        '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>'
+    );
+    if (widths.length) {
+      out.push('<cols>');
+      widths.forEach((w, i) => out.push(`<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`));
+      out.push('</cols>');
+    }
+    out.push('<sheetData>');
+    rows.forEach((row, r) => {
+      const rn = r + 1;
+      out.push(`<row r="${rn}">`);
+      row.forEach((cell, c) => {
+        if (cell === null || cell === undefined || cell === '') return;
+        const ref = colName(c) + rn;
+        const style = r === 0 && sheet.headerStyle !== false ? ' s="1"' : '';
+        if (typeof cell === 'number' && Number.isFinite(cell)) {
+          out.push(`<c r="${ref}"${style}><v>${cell}</v></c>`);
+        } else {
+          out.push(`<c r="${ref}"${style} t="inlineStr"><is><t xml:space="preserve">${esc(cell)}</t></is></c>`);
+        }
+      });
+      out.push('</row>');
+    });
+    out.push('</sheetData></worksheet>');
+    return out.join('');
+  }
+
+  const STYLES =
+    '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<fonts count="2"><font><sz val="11"/><name val="微软雅黑"/></font>' +
+    '<font><b/><sz val="11"/><name val="微软雅黑"/></font></fonts>' +
+    '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
+    '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+    '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>' +
+    '</styleSheet>';
+
+  function safeSheetName(name, used) {
+    let n = String(name || 'Sheet')
+      .replace(/[\[\]\*\?\/\\:]/g, '_')
+      .slice(0, 31);
+    if (!n) n = 'Sheet';
+    let base = n,
+      i = 2;
+    while (used.has(n)) {
+      const suffix = '(' + i++ + ')';
+      n = base.slice(0, 31 - suffix.length) + suffix;
+    }
+    used.add(n);
+    return n;
+  }
+
+  /**
+   * 生成 xlsx 字节
+   * @param {Array<{name:string, rows:Array<Array>, widths?:number[]}>} sheets
+   * @returns {Uint8Array}
+   */
+  function build(sheets) {
+    const used = new Set();
+    const list = (sheets || []).map((s) => ({
+      name: safeSheetName(s.name, used),
+      rows: s.rows || [],
+      widths: s.widths || [],
+    }));
+    if (!list.length) list.push({ name: 'Sheet1', rows: [], widths: [] });
+
+    const entries = [];
+    const contentTypes = [
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">',
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>',
+      '<Default Extension="xml" ContentType="application/xml"/>',
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>',
+      '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>',
+    ];
+    list.forEach((s, i) => {
+      contentTypes.push(
+        `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`
+      );
+    });
+    contentTypes.push('</Types>');
+
+    entries.push({
+      name: '[Content_Types].xml',
+      data: enc.encode(contentTypes.join('')),
+    });
+    entries.push({
+      name: '_rels/.rels',
+      data: enc.encode(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+          '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+          '</Relationships>'
+      ),
+    });
+
+    const sheetTags = list.map((s, i) => `<sheet name="${esc(s.name)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join('');
+    entries.push({
+      name: 'xl/workbook.xml',
+      data: enc.encode(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">' +
+          `<sheets>${sheetTags}</sheets></workbook>`
+      ),
+    });
+
+    const rels = list
+      .map(
+        (s, i) =>
+          `<Relationship Id="rId${i + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i + 1}.xml"/>`
+      )
+      .join('');
+    entries.push({
+      name: 'xl/_rels/workbook.xml.rels',
+      data: enc.encode(
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+          '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+          rels +
+          `<Relationship Id="rId${list.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>` +
+          '</Relationships>'
+      ),
+    });
+    entries.push({ name: 'xl/styles.xml', data: enc.encode(STYLES) });
+
+    list.forEach((s, i) => {
+      entries.push({ name: `xl/worksheets/sheet${i + 1}.xml`, data: enc.encode(sheetXml(s)) });
+    });
+
+    return zip(entries);
+  }
+
+  /** 触发浏览器下载 */
+  function download(filename, bytes, mime) {
+    const blob = new Blob([bytes], {
+      type: mime || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1500);
+  }
+
+  IC.xlsx = { build, download, zip, crc32, esc, colName };
+})();
+
+    </script>
+    <script>
+      /* 库存盘点 - 界面逻辑
+ * 依赖 IC.core / IC.erp / IC.xlsx
+ */
+globalThis.IC = globalThis.IC || {};
+(function () {
+  const IC = globalThis.IC;
+  const core = IC.core;
+  const erp = IC.erp;
+  const xlsx = IC.xlsx;
+
+  const LS_CFG = 'ic.cfg.v2'; // v2：不再内置/迁移任何 token、商家编码、用户名
+  const LS_CFG_OLD = 'ic.cfg.v1';
+  const LS_SESSION = 'ic.session.v1';
+
+  const $ = (s) => document.querySelector(s);
+  const esc = (v) =>
+    String(v === null || v === undefined ? '' : v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
+  /* ---------------- 状态 ---------------- */
+  const state = {
+    cfg: Object.assign({}, erp.DEFAULT_CFG),
+    warehouses: [],
+    date: core.todayStr(),
+    storeId: '',
+    storeName: '',
+    st: null,
+    tab: 'missing',
+    lastResult: null,
+    busy: false,
+    sound: true,
+    loadGlobalIndex: true,
+    loadInTransit: true, // 拉取「在途（待入库）」
+    inTransitInfo: null, // {fetched, kept, droppedByStore, error}
+    giStatus: 'idle', // idle | loading | ready | error
+    giCount: 0,
+    giError: '',
+    search: {},
+    showAll: {},
+    lastScanKey: '',
+    lastScanAt: 0,
+    stats: null,
+    // 登录相关
+    account: '',
+    password: '', // 只留在内存；勾选「记住密码」才写进 localStorage
+    rememberPwd: false, // 默认不保存密码，只保存 token；token 过期再提示重新登录
+    vcode: '',
+    loginStatus: '',
+    loginStatusKind: '', // ok | err | warn | loading
+  };
+
+  /* ---------------- 本地存储 ---------------- */
+  function lsGet(key) {
+    try {
+      return JSON.parse(localStorage.getItem(key) || 'null');
+    } catch (e) {
+      return null;
+    }
+  }
+  function lsSet(key, val) {
+    try {
+      localStorage.setItem(key, JSON.stringify(val));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  const store = IC.store;
+
+  /**
+   * 立即把会话状态写盘（不再延迟）。
+   * 延迟保存会让最后几笔在"快速关闭页面"时丢掉，代价是每次操作多一次小写入——
+   * 账面是大对象、单独存在 book 键里，状态很小，所以这里同步写没有性能问题。
+   */
+  function saveSession() {
+    if (!state.st) return true;
+    if (pendingSaveTimer) {
+      clearTimeout(pendingSaveTimer);
+      pendingSaveTimer = null;
+    }
+    try {
+      store.saveState(state.st.toJSON());
+      setSaveStatus('saved');
+      return true;
+    } catch (e) {
+      setSaveStatus('error', e);
+      return false;
+    }
+  }
+
+  let pendingSaveTimer = null;
+  /** 清空会话时要把没执行的保存任务取消掉，否则旧任务会把数据又写回来 */
+  function cancelPendingSave() {
+    if (pendingSaveTimer) {
+      clearTimeout(pendingSaveTimer);
+      pendingSaveTimer = null;
+    }
+  }
+
+  function setSaveStatus(kind, err) {
+    const el = $('#save-status');
+    if (!el) return;
+    if (kind === 'idle') {
+      el.className = 'save-status';
+      el.textContent = '';
+      el.title = '';
+      const b = $('#btn-backup');
+      if (b) b.classList.remove('need');
+      return;
+    }
+    if (kind === 'saved') {
+      el.className = 'save-status ok';
+      el.textContent = '已保存 ' + core.fmtTime(Date.now()).slice(11);
+      el.title = '盘点进度已写入本机浏览器';
+    } else if (kind === 'saving') {
+      el.className = 'save-status';
+      el.textContent = '保存中…';
+    } else {
+      const quota = err && err.storage === 'quota';
+      el.className = 'save-status err';
+      el.textContent = quota ? '保存失败：本机存储空间不足' : '保存失败：' + ((err && err.message) || '未知原因');
+      el.title = '进度没能写入本机。请点「下载会话备份」保存到文件，再关闭页面。';
+      const btn = $('#btn-backup');
+      if (btn) btn.classList.add('need');
+    }
+  }
+
+  /** 会话备份：账面 + 状态 + 统计，存不下来时用它保命 */
+  function downloadBackup() {
+    if (!state.st) return;
+    const book = store.loadBook();
+    const payload = store.buildBackup({
+      state: state.st.toJSON(),
+      book: book,
+      stats: state.st.stats(),
+    });
+    const name = store.safeName(`盘点会话备份_${state.st.storeName}_${state.st.date}_${core.fmtTime(Date.now()).replace(/[: ]/g, '-')}`) + '.json';
+    xlsx.download(name, new TextEncoder().encode(JSON.stringify(payload, null, 1)), 'application/json');
+    toast('已下载会话备份，可凭它找回本次盘点');
+  }
+  function saveCfg() {
+    const c = {
+      token: state.cfg.token,
+      companycode: state.cfg.companycode,
+      username: state.cfg.username,
+      account: state.account,
+      rememberPwd: state.rememberPwd,
+      sound: state.sound,
+      loadGlobalIndex: state.loadGlobalIndex,
+    };
+    // 只有「记住密码」且确实有密码时才写入，清除后不留空键
+    if (state.rememberPwd && state.password) c.password = state.password;
+    const ok = lsSet(LS_CFG, c);
+    if (!ok) setLoginStatus('配置保存失败（浏览器存储不可用或已满），本次设置只在当前页面有效', 'err');
+    return ok;
+  }
+
+  /* ---------------- 登录换 token ---------------- */
+  function shortToken(t) {
+    t = String(t || '');
+    return t ? t.slice(0, 8) + '…' + t.slice(-4) : '(空)';
+  }
+
+  function setLoginStatus(msg, kind) {
+    state.loginStatus = msg || '';
+    state.loginStatusKind = kind || '';
+    const el = $('#login-status');
+    if (!el) return;
+    el.className = 'login-status ' + (kind || '');
+    el.textContent = msg || '';
+  }
+
+  function showCaptcha(dataUrl) {
+    const img = $('#captcha-img');
+    if (img) img.src = dataUrl;
+    const row = $('#captcha-row');
+    if (row) row.classList.remove('hidden');
+    const inp = $('#cfg-vcode');
+    if (inp) {
+      inp.value = '';
+      setTimeout(() => inp.focus(), 60);
+    }
+  }
+  function hideCaptcha() {
+    state.vcode = '';
+    const row = $('#captcha-row');
+    if (row) row.classList.add('hidden');
+    const inp = $('#cfg-vcode');
+    if (inp) inp.value = '';
+  }
+
+  function requireLogin(msg) {
+    openSettings(msg || '请先登录', 'err');
+    const el = $('#cfg-account');
+    if (el && !el.value) el.focus();
+  }
+
+  function openSettings(msg, kind) {
+    const box = $('#setup');
+    if (box) box.classList.remove('hidden');
+    if (msg) setLoginStatus(msg, kind || 'err');
+  }
+
+  /**
+   * 用账号密码登录，成功后把新 token 写进配置并落盘
+   * @param {object} opt {silent: 静默（自动续期时不弹提示）, vcode}
+   */
+  async function doLogin(opt) {
+    opt = opt || {};
+    const accountEl = $('#cfg-account');
+    const pwdEl = $('#cfg-password');
+    const account = core.s(accountEl ? accountEl.value : '') || state.account;
+    const password = (pwdEl && pwdEl.value) || state.password;
+    if (!account || !password) {
+      const e = new Error('请先填写 ERP 账号和密码');
+      e.noCred = true;
+      throw e;
+    }
+    state.account = account;
+    state.password = password;
+    if (!opt.silent) setLoginStatus('正在登录…', 'loading');
+
+    try {
+      const r = await erp.login(state.cfg, {
+        userName: account,
+        userPwd: password,
+        VCode: opt.vcode || state.vcode || '',
+      });
+      state.cfg.token = r.token;
+      const d = r.data || {};
+      // 登录响应里若已带商家编码就直接用，否则再问一次用户资料接口
+      if (d.CompanyCode) state.cfg.companycode = core.s(d.CompanyCode);
+      const uname = d.Real || d.UserName || d.Name || d.RealName || d.UserRealName;
+      if (uname && typeof uname === 'string') state.cfg.username = uname;
+      if (!state.cfg.companycode || !state.cfg.username) await fillProfileFromToken({ silent: true });
+      hideCaptcha();
+      const tokenEl = $('#cfg-token');
+      if (tokenEl) tokenEl.value = r.token;
+      saveCfg();
+      setLoginStatus('登录成功，token 已更新为 ' + shortToken(r.token), 'ok');
+      state.loginStatus = '登录成功，token 已更新为 ' + shortToken(r.token);
+      state.loginStatusKind = 'ok';
+      if (!opt.silent) toast('登录成功，已获取新 token');
+      return true;
+    } catch (e) {
+      if (e.needCaptcha) {
+        showCaptcha(e.captcha);
+        setLoginStatus('需要输入验证码（图中 4 位字符）', 'warn');
+      } else if (e.needRegister) {
+        setLoginStatus('该账号还没在 ERP 完成注册/审核，请先登录 erp.yserp.cc 处理', 'err');
+      } else {
+        setLoginStatus(e.message || '登录失败', 'err');
+      }
+      throw e;
+    }
+  }
+
+  /**
+   * 用当前 token 拉用户资料，自动补全商家编码和用户名。
+   * 这样使用者只需要「账号 + 密码」，不需要知道 companycode；
+   * 手工粘贴 token 的场景也能自动补齐。
+   */
+  async function fillProfileFromToken(opt) {
+    opt = opt || {};
+    try {
+      const p = await erp.fetchUserIndex(state.cfg);
+      if (p.companycode) state.cfg.companycode = p.companycode;
+      if (p.username) state.cfg.username = p.username;
+      const cEl = $('#cfg-company');
+      if (cEl) cEl.value = state.cfg.companycode;
+      const uEl = $('#cfg-user');
+      if (uEl) uEl.value = state.cfg.username;
+      saveCfg();
+      if (!opt.silent) toast('已根据账号自动带出商家编码：' + state.cfg.companycode);
+      return p;
+    } catch (e) {
+      if (!opt.silent) setLoginStatus('用该 token 读取账号信息失败：' + e.message, 'err');
+      throw e;
+    }
+  }
+
+  // 多个并发请求同时遇到 token 失效时，只重新登录一次
+  let reloginPromise = null;
+  function ensureRelogin() {
+    if (!reloginPromise) {
+      reloginPromise = doLogin({ silent: true }).finally(() => {
+        reloginPromise = null;
+      });
+    }
+    return reloginPromise;
+  }
+
+  /**
+   * 包装所有接口调用：遇到「未登录或登录超时」时，
+   * 用本地保存的账号密码自动换新 token 再重试一次。
+   */
+  async function withAuth(fn) {
+    // 配置不完整（没登录 / 没商家编码）时直接拦下，不发任何请求
+    if (!erp.isConfigured(state.cfg)) {
+      requireLogin('还没有登录：请用 ERP 账号密码登录一次（登录后 token 会自动续期，不用再输）');
+      const e = new Error('未登录，已阻止发送请求');
+      e.notConfigured = true;
+      throw e;
+    }
+    try {
+      return await fn();
+    } catch (e) {
+      if (!erp.isTokenError(e)) throw e;
+      if (!state.account || !state.password) {
+        requireLogin('登录已过期，请填写 ERP 账号密码重新登录');
+        throw e;
+      }
+      try {
+        await ensureRelogin();
+      } catch (le) {
+        if (le.needCaptcha) {
+          openSettings('登录需要验证码，请输入后点「提交验证码」', 'warn');
+        } else {
+          openSettings('自动重新登录失败：' + le.message, 'err');
+        }
+        throw le;
+      }
+      return await fn();
+    }
+  }
+
+  /* ---------------- 提示 / 加载 ---------------- */
+  let toastTimer = null;
+  function toast(msg, isErr) {
+    const el = $('#toast');
+    el.textContent = msg;
+    el.className = 'toast show' + (isErr ? ' err' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => (el.className = 'toast'), isErr ? 6000 : 2600);
+  }
+
+  function busy(msg, sub) {
+    const el = $('#loading');
+    $('#loading-msg').textContent = msg || '处理中…';
+    $('#loading-sub').textContent = sub || '';
+    el.classList.remove('hidden');
+  }
+  function unbusy() {
+    $('#loading').classList.add('hidden');
+  }
+
+  /* ---------------- 声音 ---------------- */
+  let actx = null;
+  function beep(kind) {
+    if (!state.sound) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      actx = actx || new AC();
+      if (actx.state === 'suspended') actx.resume();
+      const t = actx.currentTime;
+      const seq =
+        kind === 'ok'
+          ? [[1180, 0.07, 0]]
+          : kind === 'dup'
+          ? [
+              [780, 0.06, 0],
+              [780, 0.06, 0.1],
+            ]
+          : [
+              [340, 0.18, 0],
+              [260, 0.22, 0.16],
+            ];
+      seq.forEach(([f, d, delay]) => {
+        const o = actx.createOscillator();
+        const g = actx.createGain();
+        o.type = 'sine';
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + delay);
+        g.gain.exponentialRampToValueAtTime(0.25, t + delay + 0.012);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + delay + d);
+        o.connect(g);
+        g.connect(actx.destination);
+        o.start(t + delay);
+        o.stop(t + delay + d + 0.03);
+      });
+    } catch (e) {
+      /* 忽略音频异常 */
+    }
+  }
+
+  /* ---------------- 仓库列表 ---------------- */
+  async function loadWarehouses() {
+    busy('正在读取仓库列表…', '接口：' + state.cfg.commonBase);
+    try {
+      const list = await withAuth(() => erp.fetchWarehouses(state.cfg));
+      state.warehouses = list;
+      renderStoreOptions();
+      toast(`已读取 ${list.length} 个仓库`);
+    } catch (e) {
+      if (!erp.isTokenError(e)) toast(e.message, true);
+    } finally {
+      unbusy();
+    }
+  }
+
+  function renderStoreOptions() {
+    const filter = core.s($('#store-filter') ? $('#store-filter').value : '');
+    const sel = $('#store');
+    const cur = state.storeId || sel.value;
+    const f = filter.toUpperCase();
+    const opts = ['<option value="">请选择仓库…</option>'];
+    state.warehouses.forEach((w) => {
+      const label = `${w.name}${w.branchName && w.branchName !== w.name ? '（' + w.branchName + '）' : ''}`;
+      if (f && label.toUpperCase().indexOf(f) < 0) return;
+      opts.push(`<option value="${esc(w.id)}"${String(w.id) === String(cur) ? ' selected' : ''}>${esc(label)}</option>`);
+    });
+    sel.innerHTML = opts.join('');
+    if (cur && !state.warehouses.some((w) => String(w.id) === String(cur))) sel.value = '';
+  }
+
+  /* ---------------- 拉取库存 ---------------- */
+  function setSessionHeader() {
+    if (!state.st) {
+      $('#session-info').innerHTML = '<span class="pill">尚未开始盘点</span>';
+      return;
+    }
+    const gi =
+      state.giStatus === 'loading'
+        ? '<span class="pill loading">全库索引 加载中…</span>'
+        : state.giStatus === 'ready'
+        ? `<span class="pill on">全库索引 ${state.giCount} 个串号</span>`
+        : state.giStatus === 'error'
+        ? `<span class="pill loading">全库索引 失败</span>`
+        : '<span class="pill">全库索引 未加载</span>';
+    const tr = state.inTransitInfo;
+    const trPill = !tr
+      ? ''
+      : tr.error
+      ? `<span class="pill loading" title="${esc(tr.error)}">在途未拉到</span>`
+      : `<span class="pill${tr.kept ? ' on' : ''}" title="${esc(tr.source || '')}">在途待入库 ${tr.kept}</span>`;
+    $('#session-info').innerHTML =
+      `<span class="pill on">${esc(state.st.storeName)}</span>` +
+      `<span class="pill">${esc(state.st.date)}</span>` +
+      `<span class="pill">开始于 ${esc(core.fmtTime(state.st.startedAt))}</span>` +
+      trPill +
+      gi;
+  }
+
+  async function loadInventory(opt) {
+    opt = opt || {};
+    // 没登录就不要谈选仓库，先把登录引导摆出来
+    if (!erp.isConfigured(state.cfg)) {
+      requireLogin('还没有登录：请先用 ERP 账号密码登录一次，再拉取库存');
+      toast('请先完成登录', true);
+      return;
+    }
+    const date = core.s($('#date').value) || core.todayStr();
+    const storeId = core.s($('#store').value);
+    if (!storeId) {
+      toast('请先选择仓库（门店）', true);
+      return;
+    }
+    const wh = state.warehouses.find((w) => String(w.id) === storeId);
+    const storeName = wh ? wh.name : storeId;
+
+    if (state.st && !opt.keepScans) {
+      const cur = state.st;
+      if (cur.hasContent() && (cur.storeId !== storeId || cur.date !== date)) {
+        // 别只看扫码：手工确认、实盘数量、备注同样是要丢的东西
+        const parts = [];
+        if (cur.scans.length) parts.push(`${cur.scans.length} 条扫码`);
+        if (Object.keys(cur.manualFound).length) parts.push(`${Object.keys(cur.manualFound).length} 条手工确认`);
+        if (Object.keys(cur.manualQty).length) parts.push(`${Object.keys(cur.manualQty).length} 条实盘数量`);
+        if (Object.keys(cur.manualNotes).length) parts.push(`${Object.keys(cur.manualNotes).length} 条备注`);
+        if (cur.pendingReview.length) parts.push(`${cur.pendingReview.length} 条待核实`);
+        if (
+          !confirm(
+            `当前盘点（${cur.storeName} ${cur.date}）还有：${parts.join('、')}。\n` +
+              `切换到「${storeName} ${date}」会把这些记录从本机清掉（可先点「下载会话备份」留存）。\n确定继续？`
+          )
+        )
+          return;
+      }
+    }
+
+    state.busy = true;
+    busy('正在拉取库存…', `${storeName} · ${date}`);
+    try {
+      const res = await withAuth(() =>
+        erp.fetchInventory(state.cfg, {
+          date: date,
+          storeId: storeId,
+          onProgress: (done, total) => busy('正在拉取库存…', `${storeName} · ${date} · ${done}/${total} 行`),
+        })
+      );
+      let items = core.normalizeAll(res.rows, storeId);
+
+      // 在途（待入库）：先从**同一张库存表**读（outCol 里的 ProCount_OnTransfer），
+      // 一次请求、同一套完整性校验，最可信；读不到再用库存明细接口兜底。
+      state.inTransitInfo = null;
+      const fromBook = items.filter((i) => i.inTransit).length;
+      if (fromBook > 0) {
+        state.inTransitInfo = { fetched: fromBook, kept: fromBook, droppedByStore: 0, error: '', source: '库存表在途列' };
+      } else if (state.loadInTransit) {
+        busy('正在拉取在途（待入库）…', storeName + ' · ' + date);
+        try {
+          const tr = await withAuth(() =>
+            erp.fetchInTransit(state.cfg, {
+              date: date,
+              storeId: storeId,
+              storeName: storeName,
+              branchId: wh ? wh.branchId : '',
+              branchName: wh ? wh.branchName : '',
+            })
+          );
+          const merged = core.mergeInTransit(items, tr.rows, storeId, storeName);
+          items = merged.items;
+          state.inTransitInfo = {
+            fetched: tr.fetched,
+            kept: merged.added.length,
+            droppedByStore: tr.droppedByStore,
+            error: '',
+            source: '库存明细接口（兜底）',
+          };
+        } catch (e) {
+          // 这里不单独弹提示：紧接着还有一条「已拉取…」的汇总提示会把它顶掉，
+          // 统一放到汇总提示里带上，保证用户一定看得到。
+          state.inTransitInfo = { fetched: 0, kept: 0, droppedByStore: 0, error: e.message, source: '' };
+        }
+      }
+
+      let st;
+      if (opt.keepScans && state.st && state.st.storeId === storeId && state.st.date === date) {
+        st = state.st;
+        st.items = items;
+        st.rebuildItemIndex();
+      } else {
+        st = new core.Stocktake({
+          date: date,
+          storeId: storeId,
+          storeName: storeName,
+          companycode: state.cfg.companycode,
+          items: items,
+          bookVersion: 1,
+          bookFetchedAt: Date.now(),
+        });
+      }
+      // 冻结账面：写一次，之后续盘、导出、离线都读它，不再回头拉 ERP
+      const bookPayload = {
+        sessionId: st.sessionId,
+        companycode: state.cfg.companycode,
+        storeId: storeId,
+        storeName: storeName,
+        date: date,
+        version: st.bookVersion,
+        fetchedAt: st.bookFetchedAt,
+        items: core.bookFromItems(items),
+      };
+      try {
+        store.saveBook(bookPayload);
+      } catch (e) {
+        setSaveStatus('error', e);
+        toast('账面保存失败：' + e.message + '（盘点可以继续，但请尽快点「下载会话备份」）', true);
+      }
+      const prevGlobal = state.st && state.st.globalIndex;
+      state.st = st;
+      state.storeId = storeId;
+      state.storeName = storeName;
+      state.date = date;
+      if (prevGlobal && st.globalIndex !== prevGlobal) st.setGlobalIndex(prevGlobal);
+      state.tab = 'missing';
+      state.showAll = {};
+      state.search = {};
+      // 换了会话/日期/商家，旧索引一律作废（含还在飞的请求）
+      if (state.giToken && state.giToken !== indexToken(st)) {
+        state.giStatus = 'idle';
+        state.giCount = 0;
+        state.giToken = '';
+      }
+
+      $('#setup').classList.add('hidden');
+      $('#scan-card').classList.remove('hidden');
+      $('#results-card').classList.remove('hidden');
+
+      const s = st.stats();
+      const ti = state.inTransitInfo;
+      let msg = `已拉取 ${st.storeName}：${st.items.length} 行（有串号 ${s.shouldCount} 台 / 无串号 ${s.nonSerialRows} 行）`;
+      let msgIsErr = false;
+      if (ti) {
+        if (ti.error) {
+          msg += `；在途清单未拉到：${ti.error}（不影响在库盘点）`;
+          msgIsErr = true;
+        } else if (ti.kept) {
+          msg += `；在途待入库 ${ti.kept} 台（来自${ti.source || '库存表'}）`;
+          if (ti.droppedByStore) msg += `（另有 ${ti.droppedByStore} 台不属于本仓已过滤）`;
+        } else {
+          msg += '；本店没有在途（待入库）';
+        }
+      }
+      toast(msg, msgIsErr);
+      render();
+      focusScan();
+      saveSession();
+
+      if (state.loadGlobalIndex && state.giStatus !== 'ready' && state.giStatus !== 'loading') {
+        loadGlobalIndexBg();
+      }
+    } catch (e) {
+      toast('拉取失败：' + e.message, true);
+    } finally {
+      state.busy = false;
+      unbusy();
+    }
+  }
+
+  /** 索引的目标身份：商家 + 盘点日期 + 会话号，三者任一变化，索引即失效 */
+  function indexToken(st) {
+    return [state.cfg.companycode, st.date, st.sessionId].join('|');
+  }
+
+  async function loadGlobalIndexBg() {
+    if (!state.st) return;
+    // 没登录就别试：只会多一条噪音错误提示，还会把刚弹的提示盖掉
+    if (!erp.isConfigured(state.cfg)) {
+      state.giStatus = 'idle';
+      setSessionHeader();
+      return;
+    }
+    const st = state.st;
+    const token = indexToken(st);
+    const forSession = st.sessionId;
+    state.giStatus = 'loading';
+    state.giToken = token;
+    state.giSessionId = forSession;
+    setSessionHeader();
+    renderScanCard();
+    let map = null;
+    let err = null;
+    try {
+      map = await withAuth(() => erp.fetchGlobalIndex(state.cfg, { date: st.date }));
+    } catch (e) {
+      err = e;
+    }
+    // ★ 关键：请求返回时，如果会话/日期/商家已经变了，这份索引一律丢弃，
+    //   否则旧会话的结果会污染新会话的「表外码归属」判断。
+    const cur = state.st;
+    if (!cur || indexToken(cur) !== token || cur.sessionId !== forSession) {
+      return;
+    }
+    if (err) {
+      state.giStatus = 'error';
+      state.giError = err.message;
+      if (!erp.isTokenError(err)) {
+        toast('全库索引加载失败：' + err.message + '（不影响盘点，表外码将只提示"归属尚未核实"）', true);
+      }
+    } else {
+      cur.setGlobalIndex(map);
+      state.giCount = map.size;
+      state.giStatus = 'ready';
+      state.giToken = token;
+      toast(`全库串号索引已就绪：${map.size} 个串号（可识别非本店库存）`);
+    }
+    setSessionHeader();
+    render();
+  }
+
+  /* ---------------- 扫码 ---------------- */
+  function focusScan() {
+    const el = $('#scan-input');
+    if (el && !$('#scan-card').classList.contains('hidden')) {
+      el.focus();
+      el.select();
+    }
+  }
+
+  function handleScanInput(rawValue) {
+    if (!state.st) return;
+    const raw = core.s(rawValue);
+    if (!raw) return;
+
+    // 防抖：扫码枪偶发连发两次同一个码（两次间隔通常 <100ms）。
+    // 窗口给到 600ms，慢机器上渲染耗时也不会漏判；人手重扫一般都在 1 秒以上，不受影响。
+    const now = Date.now();
+    const keyNow = core.normCode(raw);
+    if (keyNow === state.lastScanKey && now - state.lastScanAt < 600) return;
+    state.lastScanKey = keyNow;
+    state.lastScanAt = now;
+
+    // 支持一次粘贴多个码（用逗号/分号分隔）
+    const parts = raw.split(/[,;，；\r\n]+/).map(core.s).filter(Boolean);
+    let last = null;
+    parts.forEach((p) => {
+      last = state.st.scan(p, Date.now());
+    });
+
+    state.lastResult = last;
+    beep(last.status === 'ok' ? 'ok' : last.status === 'dup' ? 'dup' : 'err');
+    render();
+    saveSession();
+  }
+
+  function undoLast() {
+    if (!state.st || !state.st.scans.length) {
+      toast('没有可撤销的记录');
+      return;
+    }
+    const r = state.st.undo();
+    state.lastResult = null;
+    toast(`已撤销：${r ? r.code : ''}`);
+    render();
+    saveSession();
+    focusScan();
+  }
+
+  /* ---------------- 渲染 ---------------- */
+  function render() {
+    setSessionHeader();
+    renderScanCard();
+    renderResults();
+  }
+
+  function renderScanCard() {
+    const st = state.st;
+    if (!st) return;
+    const s = st.stats();
+    state.stats = s;
+    $('#scan-store').textContent = `${st.storeName} · ${st.date}`;
+
+    const g = $('#stats');
+    g.innerHTML = [
+      stat('应盘（有串号）', s.shouldCount, ''),
+      stat('已盘到', s.foundCount, 'ok'),
+      stat('未扫到', s.missingCount, s.missingCount ? 'danger' : 'ok'),
+      stat('其中手工确认', s.manualCount, s.manualCount ? 'warn' : ''),
+      stat('表外码', s.extraCount, s.extraCount ? 'info' : ''),
+      stat('无串号商品', s.nonSerialRows, ''),
+      stat('在途待入库', s.inTransitCount, s.inTransitCount ? 'warn' : ''),
+    ].join('');
+
+    $('#progress-bar').style.width = s.progress + '%';
+    $('#progress-text').textContent =
+      `${s.foundCount} / ${s.shouldCount} 台（${s.progress}%）` +
+      (s.manualCount ? ` · 扫码 ${s.scannedCount} + 手工 ${s.manualCount}` : '');
+    $('#progress-extra').textContent =
+      `扫描 ${s.totalScans} 次` + (s.dupCount ? ` · 重复 ${s.dupCount} 次` : '');
+
+    // 最近扫描
+    const recent = st.scans.slice(-6).reverse();
+    $('#recent').innerHTML = recent.length
+      ? recent
+          .map((r, i) => {
+            const it = r.itemKey ? st.itemByKey.get(r.itemKey) : null;
+            const label = core.STATUS_LABEL[r.status] || r.status;
+            const absIndex = st.scans.length - 1 - i; // 该条在流水里的下标
+            return `<div class="item"><span class="tag ${r.status}">${esc(label)}</span><span class="code">${esc(
+              r.code
+            )}</span><span>${esc(it ? cut(it.name, 34) : r.owners && r.owners.length ? '属于 ' + r.owners.map((o) => o.store).join('、') : '')}</span><span style="margin-left:auto">${esc(
+              core.fmtTime(r.ts).slice(11)
+            )}</span><button class="mini-x" data-act="unscan-at" data-key="${absIndex}" title="只删这一条">✕</button></div>`;
+          })
+          .join('')
+      : '<div class="item">暂无扫描记录</div>';
+
+    const fb = $('#feedback');
+    const r = state.lastResult;
+    if (!r) {
+      fb.className = 'feedback';
+      fb.innerHTML =
+        '<span class="icon">📷</span><div><div class="fb-main">等待扫码</div><div class="fb-sub">把光标放在上面的输入框，用扫码枪扫 SN 或 IMEI 条码即可</div></div>';
+    } else {
+      const it = r.item;
+      const icon = r.status === 'ok' ? '✅' : r.status === 'dup' ? '↺' : r.status === 'foreign' ? '⚠️' : '❌';
+      const title = core.STATUS_LABEL[r.status] || r.status;
+      const sub = [];
+      sub.push('码：' + r.code);
+      if (it) sub.push('商品：' + it.name);
+      if (it && it.serials.length > 1) sub.push('该机串号：' + it.serials.join(' / '));
+      if (r.message) sub.push(r.message);
+      if (r.owners && r.owners.length) sub.push('归属：' + r.owners.map((o) => o.store + ' · ' + cut(o.name, 30)).join(' ｜ '));
+      fb.className = 'feedback ' + r.status;
+      fb.innerHTML =
+        `<span class="icon">${icon}</span><div><div class="fb-main">${esc(title)}</div><div class="fb-sub">${esc(
+          sub.join(' · ')
+        )}</div></div>`;
+    }
+  }
+
+  function stat(k, v, cls) {
+    return `<div class="stat ${cls}"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`;
+  }
+
+  function cut(s, n) {
+    s = String(s || '');
+    return s.length > n ? s.slice(0, n) + '…' : s;
+  }
+
+  const TABS = [
+    { id: 'review', label: '待核实' },
+    { id: 'transit', label: '在途待入库' },
+    { id: 'missing', label: '未扫到' },
+    { id: 'extra', label: '表外码' },
+    { id: 'found', label: '已扫明细' },
+    { id: 'nonserial', label: '无串号商品' },
+    { id: 'summary', label: '汇总' },
+  ];
+
+  function visibleTabs() {
+    const st = state.st;
+    const pending = st && st.pendingReview ? st.pendingReview.length : 0;
+    // 「待核实」只在真有需要人工处理的条目时出现，平时不占位置
+    const transit = st && st.inTransitItems ? st.inTransitItems().length : 0;
+    return TABS.filter((t) => {
+      if (t.id === 'review') return pending > 0;
+      if (t.id === 'transit') return transit > 0;
+      return true;
+    });
+  }
+
+  function tabCount(id) {
+    const st = state.st;
+    if (!st) return 0;
+    if (id === 'review') return (st.pendingReview || []).length;
+    if (id === 'transit') return st.inTransitItems().length;
+    if (id === 'missing') return st.missing().length;
+    if (id === 'extra') return st.extras().length;
+    if (id === 'found') return st.found().length;
+    // 确认过的已经移到「已扫明细」，角标显示剩下待确认的行数
+    if (id === 'nonserial') return st.nonSerialItems().filter((it) => !it.manualAt).length;
+    return 0;
+  }
+
+  /**
+   * 重绘前把表格里输入框的内容和焦点存下来，重绘后恢复。
+   * 为什么需要：全库索引在后台加载完成时会触发一次整表重绘，
+   * 如果没有这一步，用户正在输入、还没失焦提交的实盘数量会被直接冲掉。
+   */
+  function snapshotInputs() {
+    const body = $('#tab-body');
+    if (!body) return null;
+    const ae = document.activeElement;
+    const snap = { values: Object.create(null), focus: null };
+    body.querySelectorAll('input[data-kind]').forEach((el) => {
+      const kind = el.getAttribute('data-kind');
+      const key = el.getAttribute('data-key');
+      snap.values[kind + '\u0001' + key] = el.value;
+      if (el === ae) {
+        snap.focus = {
+          kind: kind,
+          key: key,
+          start: el.selectionStart,
+          end: el.selectionEnd,
+        };
+      }
+    });
+    return snap;
+  }
+
+  function restoreInputs(snap) {
+    if (!snap) return;
+    const body = $('#tab-body');
+    if (!body) return;
+    body.querySelectorAll('input[data-kind]').forEach((el) => {
+      const k = el.getAttribute('data-kind') + '\u0001' + el.getAttribute('data-key');
+      if (snap.values[k] !== undefined && snap.values[k] !== el.value) el.value = snap.values[k];
+    });
+    if (snap.focus) {
+      const el = body.querySelector(
+        `input[data-kind="${snap.focus.kind}"][data-key="${snap.focus.key}"]`
+      );
+      if (el) {
+        el.focus();
+        try {
+          if (snap.focus.start !== null && snap.focus.start !== undefined) {
+            el.setSelectionRange(snap.focus.start, snap.focus.end);
+          }
+        } catch (e) {}
+      }
+    }
+  }
+
+  function renderResults() {
+    const st = state.st;
+    if (!st) return;
+    const snap = snapshotInputs();
+
+    $('#tabs').innerHTML = visibleTabs().map((t) => {
+      const n = tabCount(t.id);
+      const hot = (t.id === 'missing' || t.id === 'extra' || t.id === 'review') && n > 0 ? ' hot' : '';
+      const noBadge = t.id === 'summary';
+      return `<button data-tab="${t.id}" class="${state.tab === t.id ? 'active' : ''}">${esc(t.label)}${
+        noBadge ? '' : `<span class="badge${hot}">${n}</span>`
+      }</button>`;
+    }).join('');
+
+    const body = $('#tab-body');
+    if (state.tab === 'summary') {
+      body.innerHTML = renderSummary();
+      return;
+    } else {
+      const t = buildTable(state.tab);
+      const demoFilter = state.tab === 'missing' ? `<button data-act="filter-demo">只看样机/演示机</button>` : '';
+      let bulk = '';
+      if (state.tab === 'nonserial') {
+        const pending = st.pendingNonSerial().length; // 插完 DOM 后 refreshNonSerialBar 会按筛选精确刷新
+        bulk = `<button data-act="confirm-all" class="primary"${
+          pending ? '' : ' disabled'
+        }>✓ 一键确认已填数量（${pending}）</button>`;
+      }
+      const tip =
+        state.tab === 'missing'
+          ? `<div class="hint">样机、演示机盒子找不到扫不了码的：先在「确认备注」写明原因，再点 <b>✓ 标记已找到</b>，这台就计入已盘（会在「已扫明细」里标成“手工确认”，导出报表也有记录）。<br>注意：<b>在途（待入库）的商品不在这个清单里</b>——货还没到店，本来就不该扫到；它们单独在「在途待入库」页，如果货实际到了，扫它就会变成「已扫到（货已到）」。</div>`
+          : state.tab === 'found'
+          ? `<div class="hint">扫错的可以<b>单独撤销</b>：每行右边的「撤销这一扫」只删这一台的记录，其它记录和手工确认都不受影响；撤销后它会回到「未扫到」。扫码台下面的「最近扫描」每条后面也有 ✕，可以随手删掉刚扫错的那一条。</div>`
+          : state.tab === 'extra'
+          ? `<div class="hint">这些是本店账面上没有的码。「删除这条」会删掉该码的全部扫描记录（含重复扫的）。如果是真实存在的货，建议先写备注留痕再处理。</div>`
+          : state.tab === 'nonserial'
+          ? (() => {
+              return `<div class="hint">整箱配件、促销品这类没有串号、扫不了码的：<b>✓ 标记已找到</b> 表示账面数量全在（实盘数量自动等于账面、差异 0），确认后这行就移到「已扫明细」，不在这里占位置了；<b>数量有出入就直接改实盘数量</b>，系统自动算差异。<br>录数量时按 <b>Tab</b> 或 <b>回车</b> 跳到<b>下一行的实盘数量</b>（Shift+Tab 回上一行）；填完一批可以点 <b>✓ 一键确认已填数量</b> 批量确认。<br><b>这里的数量只对「在库」</b>：同一个商品如果还有在途，会在「在途待入库」单独列一条，两边各算各的。</div>
+              <div class="hint" id="ns-progress" style="color:#3c4a63">${nonSerialProgressHtml()}</div>`;
+            })()
+          : '';
+      body.innerHTML =
+        `<div class="toolbar"><input type="text" id="search" placeholder="在本页结果中搜索…" value="${esc(
+          state.search[state.tab] || ''
+        )}" style="width:260px">${demoFilter}${bulk}<span class="spacer"></span>` +
+        `<button data-act="export-tab">导出本表 CSV</button></div>` +
+        tip +
+        `<div class="table-wrap">${t.html}</div>` +
+        (t.moreHtml || '');
+    }
+    restoreInputs(snap); // 正在输入的内容与焦点原样恢复
+    refreshNonSerialBar(); // DOM 已就绪，按当前筛选/输入框内容精确刷新按钮与进度
+  }
+
+  function buildTable(tab) {
+    const st = state.st;
+    const kw = core.s(state.search[tab]).toUpperCase();
+    let headers = [];
+    let rows = [];
+
+    if (tab === 'transit') {
+      headers = ['#', '商品名称', '串号', '账面数量', '来源仓', '收货单号', '状态'];
+      rows = st.inTransitItems().map((it, i) => {
+        const info = it.inTransitInfo || {};
+        const arrived = !!(it.matchedCode || it.manualAt);
+        return [
+          String(i + 1),
+          it.name,
+          it.serials.join(' / ') || (it.hasSerial ? '—' : '无串号（按数量）'),
+          String(it.qty),
+          info.fromStore || '—',
+          info.receivingCode || '—',
+          {
+            html: arrived ? '<span class="tag ok">已扫到（货已到）</span>' : '<span class="tag dup">待入库</span>',
+            text: arrived ? '已扫到（货已到）' : '待入库',
+          },
+        ];
+      });
+    } else if (tab === 'review') {
+      headers = ['#', '类型', '原标识（旧账面）', '内容', '原因'];
+      rows = (st.pendingReview || []).map((r, i) => [
+        String(i + 1),
+        r.kind || '',
+        r.key || '',
+        r.value === undefined || r.value === null ? '' : String(r.value),
+        r.reason || '旧版本记录无法确认对应商品，需人工核对',
+      ]);
+    } else if (tab === 'missing') {
+      headers = [
+        '#',
+        '商品名称',
+        '账面串号（任一即可）',
+        '分类',
+        '品牌',
+        '串号标识',
+        '商品编码',
+        '确认备注',
+        '操作',
+      ];
+      rows = st.missing().map((it, i) => [
+        String(i + 1),
+        it.name,
+        it.serials.join(' / '),
+        [it.cat1, it.cat2, it.cat3].filter(Boolean).join('/'),
+        it.brand,
+        it.tag,
+        it.proId,
+        {
+          input: {
+            kind: 'mnote',
+            key: it.key,
+            value: st.manualNote(it.key),
+            placeholder: '如：样机在展台、无盒',
+          },
+        },
+        {
+          html: `<button class="mini-btn" data-act="confirm" data-key="${esc(it.key)}" title="实在扫不到码时，人工核对后点这里计入已盘">✓ 标记已找到</button>`,
+          text: '',
+        },
+      ]);
+    } else if (tab === 'extra') {
+      headers = ['#', '扫到的码', '判定', '归属仓库', '归属商品', '次数', '首次扫描时间', '备注', '操作'];
+      rows = st.extras().map((r, i) => [
+        String(i + 1),
+        r.code,
+        core.STATUS_LABEL[r.status],
+        r.owners.map((o) => o.store).join('、') || '—',
+        r.owners.length ? r.owners.map((o) => o.name).join(' ｜ ') : '—',
+        String(r.times),
+        core.fmtTime(r.ts),
+        { input: { kind: 'note', key: r.code, value: st.remarks[r.code] || '', placeholder: '如：调拨未入账 / 扫错' } },
+        {
+          html: `<button class="mini-btn ghost-btn" data-act="unscan-code" data-key="${esc(
+            r.code
+          )}" title="删掉这个码的全部扫描记录（${r.times} 条）">删除这条</button>`,
+          text: '',
+        },
+      ]);
+    } else if (tab === 'found') {
+      headers = ['#', '商品名称', '来源', '扫到的码', '该机全部串号', '分类', '盘点时间', '备注', '操作'];
+      rows = st
+        .found()
+        .slice()
+        .sort((a, b) => (a.matchedAt || a.manualAt) - (b.matchedAt || b.manualAt))
+        .map((it, i) => {
+          const manual = !it.matchedCode && !!it.manualAt;
+          const noSerial = !it.hasSerial;
+          return [
+            String(i + 1),
+            it.name,
+            {
+              html: manual
+                ? '<span class="tag dup">手工确认</span>'
+                : '<span class="tag ok">扫码</span>',
+              text: manual ? '手工确认' : '扫码',
+            },
+            it.matchedCode || (noSerial ? `无串号（账面 ${it.qty}）` : '—'),
+            noSerial ? '—' : it.serials.join(' / '),
+            [it.cat1, it.cat2, it.cat3].filter(Boolean).join('/'),
+            core.fmtTime(it.matchedAt || it.manualAt),
+            manual
+              ? {
+                  input: { kind: 'mnote', key: it.key, value: st.manualNote(it.key), placeholder: '备注' },
+                }
+              : st.manualNote(it.key) || '',
+            manual
+              ? {
+                  html: `<button class="mini-btn ghost-btn" data-act="unconfirm" data-key="${esc(
+                    it.key
+                  )}" title="点错了？撤销后这台回到「未扫到」">撤销确认</button>`,
+                  text: '',
+                }
+              : {
+                  html: `<button class="mini-btn ghost-btn" data-act="unscan" data-key="${esc(
+                    it.key
+                  )}" title="只删掉这一台的扫码记录，其它记录不受影响">撤销这一扫</button>`,
+                  text: '',
+                },
+          ];
+        });
+    } else if (tab === 'nonserial') {
+      // 确认过的已经进「已扫明细」了，这里只留还没确认的，作为待办清单
+      headers = ['#', '商品名称', '分类', '串号标识', '账面数量', '实盘数量', '差异', '备注', '操作'];
+      rows = st
+        .nonSerialRows()
+        .filter((r) => !r.confirmed)
+        .map((r, i) => [
+        String(i + 1),
+        r.item.name,
+        [r.item.cat1, r.item.cat2, r.item.cat3].filter(Boolean).join('/'),
+        r.item.tag,
+        String(r.book),
+        { input: { kind: 'qty', key: r.item.key, value: r.actual === null ? '' : String(r.actual) } },
+        r.diff === null ? '未盘' : r.diff === 0 ? '0' : (r.diff > 0 ? '+' : '') + r.diff,
+        { input: { kind: 'note', key: r.item.key, value: r.remark, placeholder: '备注' } },
+        {
+          html: `<button class="mini-btn" data-act="confirm" data-key="${esc(
+            r.item.key
+          )}" title="数量没错就点这里，表示账面数量全在；有差异请直接改实盘数量">✓ 标记已找到</button>`,
+          text: '',
+        },
+      ]);
+    }
+
+    if (kw) {
+      rows = rows.filter((r) =>
+        r.some((c) => {
+          const v = c && typeof c === 'object' ? (c.input ? c.input.value : c.text || '') : c;
+          return String(v === null || v === undefined ? '' : v).toUpperCase().indexOf(kw) >= 0;
+        })
+      );
+    }
+
+    if (!rows.length) {
+      const txt =
+        tab === 'missing'
+          ? '<span class="big">🎉</span>没有未扫到的商品'
+          : tab === 'extra'
+          ? '<span class="big">👍</span>没有表外码'
+          : tab === 'nonserial'
+          ? '<span class="big">🎉</span>无串号商品都确认完了（确认过的都在「已扫明细」里）'
+          : tab === 'review'
+          ? '没有需要人工核实的条目'
+          : tab === 'transit'
+          ? '这个门店没有在途（待入库）商品'
+          : '暂无数据';
+      return { html: `<div class="empty">${txt}</div>` };
+    }
+
+    const LIMIT = 400;
+    const showAll = state.showAll[tab];
+    const visible = showAll ? rows : rows.slice(0, LIMIT);
+    let moreHtml = '';
+    if (rows.length > LIMIT && !showAll) {
+      moreHtml = `<div class="hint">共 ${rows.length} 条，当前显示前 ${LIMIT} 条。<button data-act="show-all" style="margin-left:8px">显示全部</button></div>`;
+    }
+
+    const head = headers.map((h) => `<th>${esc(h)}</th>`).join('');
+    const body = visible
+      .map((r) => {
+        const tds = r
+          .map((c) => {
+            if (c && typeof c === 'object' && c.input) {
+              const i = c.input;
+              const cls = i.kind === 'qty' ? 'qty-input' : 'note-input';
+              return `<td><input class="${cls}" data-kind="${i.kind}" data-key="${esc(i.key)}" value="${esc(
+                i.value
+              )}" placeholder="${esc(i.placeholder || '')}" inputmode="${i.kind === 'qty' ? 'numeric' : 'text'}"></td>`;
+            }
+            if (c && typeof c === 'object' && c.html) return `<td class="act-cell">${c.html}</td>`;
+            const txt = String(c === null || c === undefined ? '' : c);
+            const cls = /^[0-9A-Za-z\-\/]{6,}$/.test(txt) && /[0-9]/.test(txt) ? ' class="mono"' : '';
+            return `<td${cls}>${esc(txt)}</td>`;
+          })
+          .join('');
+        return `<tr>${tds}</tr>`;
+      })
+      .join('');
+
+    return {
+      html: `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`,
+      moreHtml: moreHtml,
+    };
+  }
+
+  function renderSummary() {
+    const st = state.st;
+    const s = st.stats();
+    const okRate = s.shouldCount ? ((s.foundCount / s.shouldCount) * 100).toFixed(1) : '0.0';
+    const items = [
+      ['账面总行数', st.items.length],
+      ['账面在库数量', s.bookOnHand],
+      ['账面总数量（含在途）', s.bookTotal],
+      ['应盘（有串号）', s.shouldCount],
+      ['已盘到', s.foundCount],
+      ['其中：扫码盘到', s.scannedCount],
+      ['其中：手工确认', s.manualCount],
+      ['未扫到', s.missingCount],
+      ['盘点完成率', okRate + '%'],
+      ['表外码（去重）', s.extraCount],
+      ['表外码扫描次数', s.extraScans],
+      ['重复扫描次数', s.dupCount],
+      ['扫描总次数', s.totalScans],
+      ['在途（待入库）台数', s.inTransitCount],
+      ['其中已扫到（货已到）', s.inTransitArrivedCount],
+      ['无串号商品行数', s.nonSerialRows],
+      ['无串号账面数量', s.nonSerialBook],
+      ['无串号已手工盘过行数', s.nonSerialCounted + ' / ' + s.nonSerialRows],
+      ['无串号已盘部分账面', s.nonSerialBookCounted],
+      ['无串号已盘部分实盘', s.nonSerialActual],
+      ['无串号差异（仅已盘部分）', s.nonSerialDiff],
+    ];
+    return (
+      `<div class="sum-list">` +
+      items
+        .map(
+          ([k, v]) =>
+            `<div class="sum-item"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`
+        )
+        .join('') +
+      `</div>` +
+      `<div class="hint">无串号商品的差异只统计<b>已经手工盘过的行</b>，未盘的行不计入，避免盘到一半显示成大面积盘亏。<br>盘点对象：<b>${esc(st.storeName)}</b>　快照日期：<b>${esc(st.date)}</b>　开始时间：<b>${esc(
+        core.fmtTime(st.startedAt)
+      )}</b>` +
+      (state.giStatus === 'ready'
+        ? `<br>全库串号索引：<b>已加载 ${state.giCount} 个串号</b>，表外码可显示归属仓库。`
+        : `<br>全库串号索引：<b>${
+            state.giStatus === 'loading' ? '加载中…' : state.giStatus === 'error' ? '加载失败（' + esc(state.giError) + '）' : '未加载'
+          }</b>，表外码只能提示"本店账面没有"。`) +
+      `</div>`
+    );
+  }
+
+  /* ---------------- 导出 ---------------- */
+  function fileBase() {
+    const st = state.st;
+    const d = st ? st.date : core.todayStr();
+    const n = st ? st.storeName : '库存';
+    return `库存盘点_${n}_${d}`.replace(/[\\/:*?"<>|]/g, '_');
+  }
+
+  function sheetsForExport() {
+    const st = state.st;
+    const s = st.stats();
+    const sheets = [];
+    sheets.push({
+      name: '汇总',
+      widths: [22, 20],
+      rows: [
+        ['项目', '数值'],
+        ['盘点仓库', st.storeName],
+        ['快照日期', st.date],
+        ['开始时间', core.fmtTime(st.startedAt)],
+        ['导出时间', core.fmtTime(Date.now())],
+        ['账面总行数', st.items.length],
+        ['账面在库数量', s.bookOnHand],
+        ['账面总数量（含在途）', s.bookTotal],
+        ['应盘（有串号）', s.shouldCount],
+        ['已盘到', s.foundCount],
+        ['其中扫码盘到', s.scannedCount],
+        ['其中手工确认', s.manualCount],
+        ['未扫到', s.missingCount],
+        ['盘点完成率', (s.shouldCount ? ((s.foundCount / s.shouldCount) * 100).toFixed(1) : '0.0') + '%'],
+        ['表外码（去重）', s.extraCount],
+        ['表外码扫描次数', s.extraScans],
+        ['重复扫描次数', s.dupCount],
+        ['扫描总次数', s.totalScans],
+        ['在途（待入库）台数', s.inTransitCount],
+        ['其中已扫到（货已到）', s.inTransitArrivedCount],
+        ['无串号商品行数', s.nonSerialRows],
+        ['无串号账面数量', s.nonSerialBook],
+        ['无串号已手工盘过行数', s.nonSerialCounted + ' / ' + s.nonSerialRows],
+        ['无串号已盘部分账面', s.nonSerialBookCounted],
+        ['无串号已盘部分实盘', s.nonSerialActual],
+        ['无串号差异（仅已盘部分）', s.nonSerialDiff],
+      ],
+    });
+    sheets.push({
+      name: '未扫到',
+      widths: [46, 34, 22, 10, 12, 12],
+      rows: [['商品名称', '账面串号（任一即可）', '分类', '品牌', '串号标识', '商品编码']].concat(
+        st.missing().map((it) => [
+          it.name,
+          it.serials.join(' / '),
+          [it.cat1, it.cat2, it.cat3].filter(Boolean).join('/'),
+          it.brand,
+          it.tag,
+          it.proId,
+        ])
+      ),
+    });
+    sheets.push({
+      name: '表外串号',
+      widths: [26, 14, 22, 40, 8, 20, 26],
+      rows: [['扫到的码', '判定', '归属仓库', '归属商品', '次数', '首次扫描时间', '备注']].concat(
+        st.extras().map((r) => [
+          r.code,
+          core.STATUS_LABEL[r.status],
+          r.owners.map((o) => o.store).join('、'),
+          r.owners.map((o) => o.name).join(' ｜ '),
+          r.times,
+          core.fmtTime(r.ts),
+          st.remarks[r.code] || '',
+        ])
+      ),
+    });
+    sheets.push({
+      name: '已扫明细',
+      widths: [46, 12, 26, 34, 22, 20, 26],
+      rows: [
+        ['商品名称', '来源', '扫到的码', '该机全部串号', '分类', '盘点时间', '备注'],
+      ].concat(
+        st
+          .found()
+          .slice()
+          .sort((a, b) => (a.matchedAt || a.manualAt) - (b.matchedAt || b.manualAt))
+          .map((it) => [
+            it.name,
+            it.matchedCode ? '扫码' : '手工确认',
+            it.matchedCode || (it.hasSerial ? '' : '（无串号，账面 ' + it.qty + '）'),
+            it.serials.join(' / '),
+            [it.cat1, it.cat2, it.cat3].filter(Boolean).join('/'),
+            core.fmtTime(it.matchedAt || it.manualAt),
+            st.manualNote(it.key) || st.remarks[it.key] || '',
+          ])
+      ),
+    });
+    sheets.push({
+      name: '在途待入库',
+      widths: [46, 34, 12, 20, 20, 16, 20],
+      rows: [['商品名称', '串号', '账面在途数量', '来源仓', '收货单号', '状态', '预计到货']].concat(
+        st.inTransitItems().map((it) => {
+          const info = it.inTransitInfo || {};
+          const arrived = !!(it.matchedCode || it.manualAt);
+          return [
+            it.name,
+            it.serials.join(' / '),
+            it.qty,
+            info.fromStore || '',
+            info.receivingCode || '',
+            arrived ? '已扫到（货已到）' : '待入库',
+            info.expectDate || '',
+          ];
+        })
+      ),
+    });
+    sheets.push({
+      name: '手工确认',
+      widths: [46, 12, 34, 12, 22, 12, 20, 30],
+      rows: [
+        ['商品名称', '类型', '全部串号', '账面数量', '分类', '串号标识', '确认时间', '确认备注'],
+      ].concat(
+        st.manualList().map((it) => [
+          it.name,
+          it.hasSerial ? '有串号' : '无串号',
+          it.serials.join(' / '),
+          it.qty,
+          [it.cat1, it.cat2, it.cat3].filter(Boolean).join('/'),
+          it.tag,
+          core.fmtTime(it.manualAt),
+          st.manualNote(it.key) || st.remarks[it.key] || '',
+        ])
+      ),
+    });
+    sheets.push({
+      name: '无串号商品',
+      widths: [46, 22, 12, 12, 12, 12, 14, 20, 26],
+      rows: [
+        ['商品名称', '分类', '串号标识', '账面数量', '实盘数量', '差异', '是否确认', '确认时间', '备注'],
+      ].concat(
+        st.nonSerialRows().map((r) => [
+          r.item.name,
+          [r.item.cat1, r.item.cat2, r.item.cat3].filter(Boolean).join('/'),
+          r.item.tag,
+          r.book,
+          r.actual === null ? '' : r.actual,
+          r.diff === null ? '' : r.diff,
+          r.confirmed ? '已确认找到' : '',
+          r.confirmed ? core.fmtTime(r.item.manualAt) : '',
+          r.remark,
+        ])
+      ),
+    });
+    sheets.push({
+      name: '账面全量',
+      widths: [46, 34, 22, 10, 10, 14, 20, 26],
+      rows: [['商品名称', '全部串号', '分类', '在库', '在途', '盘点方式', '扫到的码', '备注']].concat(
+        st.items.map((it) => [
+          it.name,
+          it.serials.join(' / '),
+          [it.cat1, it.cat2, it.cat3].filter(Boolean).join('/'),
+          it.inTransit ? 0 : it.qty,
+          it.inTransit ? it.qty : it.qtyOnTransfer || 0,
+          it.inTransit
+            ? it.matchedCode || it.manualAt
+              ? '在途·已扫到'
+              : '在途待入库'
+            : !it.hasSerial
+            ? it.manualAt
+              ? '无串号·已确认'
+              : '无串号'
+            : it.matchedCode
+            ? '扫码盘到'
+            : it.manualAt
+            ? '手工确认'
+            : '未扫到',
+          it.matchedCode,
+          st.manualNote(it.key) || st.remarks[it.key] || '',
+        ])
+      ),
+    });
+    return sheets;
+  }
+
+  /**
+   * 「一键确认已填数量」会处理哪些行：当前列表里填了实盘数量、还没确认的行。
+   * 有搜索条件时只算筛选出来的行，避免把看不见的行也提交了。
+   */
+  function bulkPendingKeys() {
+    const st = state.st;
+    if (!st) return [];
+    const kw = core.s(state.search[state.tab]);
+    const inputs = new Map(
+      [...document.querySelectorAll('#tab-body .qty-input')].map((el) => [el.getAttribute('data-key'), el])
+    );
+    const out = [];
+    st.nonSerialItems()
+      .filter((it) => !it.manualAt)
+      .forEach((it) => {
+        const el = inputs.get(it.key);
+        if (kw && !el) return; // 被搜索条件筛掉的行不算
+        const raw = el
+          ? el.value.trim()
+          : st.manualQty[it.key] === undefined
+          ? ''
+          : String(st.manualQty[it.key]);
+        if (raw !== '' && !isNaN(Number(raw))) out.push(it.key);
+      });
+    return out;
+  }
+
+  /** 无串号商品页的进度文案（口径：已确认 = 真正点过确认的行） */
+  function nonSerialProgressHtml() {
+    const st = state.st;
+    if (!st) return '';
+    const s = st.stats();
+    const confirmed = st.manualNonSerial().length;
+    const left = s.nonSerialRows - confirmed;
+    const filled = bulkPendingKeys().length;
+    return (
+      `无串号商品共 <b>${s.nonSerialRows}</b> 行，已确认 <b>${confirmed}</b> 行（已移到「已扫明细」），` +
+      `列表里还剩 <b>${left}</b> 行待确认，其中 <b>${filled}</b> 行已填数量可一键提交。`
+    );
+  }
+
+  /** 只刷新「一键确认」按钮和进度文案，不动表格，保证输入焦点不丢 */
+  function refreshNonSerialBar() {
+    if (!state.st || state.tab !== 'nonserial') return;
+    const n = bulkPendingKeys().length;
+    const btn = document.querySelector('[data-act="confirm-all"]');
+    if (btn) {
+      btn.textContent = `✓ 一键确认已填数量（${n}）`;
+      btn.disabled = n === 0;
+    }
+    const prog = document.getElementById('ns-progress');
+    if (prog) prog.innerHTML = nonSerialProgressHtml();
+  }
+
+  /**
+   * 提交实盘数量：只更新这一行的差异单元格和统计卡片，
+   * 不整表重绘 —— 重绘会把焦点弄丢，没法连续录入。
+   */
+  function commitQty(el) {
+    if (!state.st) return;
+    const key = el.getAttribute('data-key');
+    const it = state.st.itemByKey.get(key);
+    if (!it) return;
+    const v = String(el.value || '').trim();
+    state.st.setManualQty(key, v);
+    saveSession();
+
+    const actual = v === '' ? null : Number(v);
+    const diff = actual === null ? null : actual - it.qty;
+    const tr = el.closest ? el.closest('tr') : null;
+    if (tr && tr.children[6]) {
+      tr.children[6].textContent = diff === null ? '未盘' : diff === 0 ? '0' : (diff > 0 ? '+' : '') + diff;
+    }
+    if (state.stats) renderScanCard();
+    refreshNonSerialBar();
+  }
+
+  /** 提交当前正在编辑的表格输入框（切页/重绘前兜底，避免没失焦的值丢掉） */
+  function commitFocusedInput() {
+    const el = document.activeElement;
+    if (!el || !el.getAttribute || !state.st) return;
+    const kind = el.getAttribute('data-kind');
+    if (!kind) return;
+    const key = el.getAttribute('data-key');
+    if (kind === 'qty') commitQty(el);
+    else if (kind === 'note') {
+      state.st.remarks[key] = el.value;
+      saveSession();
+    } else if (kind === 'mnote') {
+      state.st.setManualNote(key, el.value);
+      saveSession();
+    }
+  }
+
+  /** 把焦点移到上/下一行的同一类输入框（跳过普通单元格） */
+  function moveSameColumn(el, dir) {
+    const kind = el.getAttribute('data-kind');
+    const list = [...document.querySelectorAll('#tab-body input[data-kind="' + kind + '"]')];
+    const i = list.indexOf(el);
+    if (i < 0) return;
+    const next = list[i + dir];
+    if (next) {
+      next.focus();
+      try {
+        next.select();
+      } catch (e) {}
+      return;
+    }
+    if (dir > 0) {
+      // 最后一行的下一格：回到扫码框，接着扫码
+      focusScan();
+      toast('这一列填完了，继续扫码吧');
+    } else {
+      el.focus();
+      try {
+        el.select();
+      } catch (e) {}
+    }
+  }
+
+  function exportXlsx() {
+    if (!state.st) return;
+    try {
+      const bytes = xlsx.build(sheetsForExport());
+      xlsx.download(fileBase() + '.xlsx', bytes);
+      toast(`已导出 ${fileBase()}.xlsx`);
+    } catch (e) {
+      toast('导出失败：' + e.message, true);
+    }
+  }
+
+  function exportCsv() {
+    if (!state.st) return;
+    const sheets = sheetsForExport();
+    const rows = [];
+    sheets.forEach((sh, i) => {
+      if (i) rows.push([]);
+      rows.push(['【' + sh.name + '】']);
+      sh.rows.forEach((r) => rows.push(r));
+    });
+    const csv = '\ufeff' + core.toCSV(rows);
+    xlsx.download(fileBase() + '.csv', new TextEncoder().encode(csv), 'text/csv;charset=utf-8');
+    toast('已导出 CSV');
+  }
+
+  function exportTabCsv() {
+    if (!state.st) return;
+    const st = state.st;
+    let rows = [];
+    if (state.tab === 'missing') {
+      rows = [['商品名称', '账面串号', '分类', '品牌', '串号标识', '商品编码', '确认备注']].concat(
+        st.missing().map((it) => [
+          it.name,
+          it.serials.join(' / '),
+          [it.cat1, it.cat2, it.cat3].filter(Boolean).join('/'),
+          it.brand,
+          it.tag,
+          it.proId,
+          st.manualNote(it.key),
+        ])
+      );
+    } else if (state.tab === 'extra') {
+      rows = [['扫到的码', '判定', '归属仓库', '次数', '首次扫描时间', '备注']].concat(
+        st.extras().map((r) => [r.code, core.STATUS_LABEL[r.status], r.owners.map((o) => o.store).join('、'), r.times, core.fmtTime(r.ts), st.remarks[r.code] || ''])
+      );
+    } else if (state.tab === 'found') {
+      rows = [['商品名称', '来源', '扫到的码', '该机全部串号', '盘点时间', '备注']].concat(
+        st
+          .found()
+          .map((it) => [
+            it.name,
+            it.matchedCode ? '扫码' : '手工确认',
+            it.matchedCode,
+            it.serials.join(' / '),
+            core.fmtTime(it.matchedAt || it.manualAt),
+            st.manualNote(it.key),
+          ])
+      );
+    } else if (state.tab === 'nonserial') {
+      rows = [['商品名称', '账面数量', '实盘数量', '差异', '是否确认', '备注']].concat(
+        st.nonSerialRows().map((r) => [
+          r.item.name,
+          r.book,
+          r.actual === null ? '' : r.actual,
+          r.diff === null ? '' : r.diff,
+          r.confirmed ? '已确认找到' : '',
+          r.remark,
+        ])
+      );
+    }
+    const csv = '\ufeff' + core.toCSV(rows);
+    const name = TABS.find((x) => x.id === state.tab);
+    xlsx.download(`${fileBase()}_${name ? name.label : state.tab}.csv`, new TextEncoder().encode(csv), 'text/csv;charset=utf-8');
+    toast('已导出本表 CSV');
+  }
+
+  /* ---------------- 更新账面（独立操作） ---------------- */
+
+  let pendingBookUpdate = null;
+
+  /**
+   * 更新账面：重新从 ERP 拉一次，但**不覆盖**当前会话——
+   * 先算出差异（新增/移除/数量变化/不唯一），让人确认后再建立新账面版本。
+   * 旧账面会保留为「上一版」。
+   */
+  async function updateBook() {
+    const st = state.st;
+    if (!st) return;
+    if (!erp.isConfigured(state.cfg)) {
+      requireLogin('更新账面需要先登录');
+      return;
+    }
+    if (!confirm('更新账面会重新从 ERP 拉取库存。\n· 当前账面会保留为「上一版」\n· 扫码记录按串号重新核对\n· 手工数量/确认/备注只在不唯一的条目上转人工核实\n\n确定继续？')) return;
+
+    busy('正在拉取新账面…', st.storeName + ' · ' + st.date);
+    try {
+      const res = await withAuth(() =>
+        erp.fetchInventory(state.cfg, { date: st.date, storeId: st.storeId, label: '库存查询' })
+      );
+      let newItems = core.normalizeAll(res.rows, st.storeId);
+      const transitInBook = newItems.filter((i) => i.inTransit).length;
+      if (transitInBook === 0 && state.loadInTransit) {
+        try {
+          const tr = await withAuth(() =>
+            erp.fetchInTransit(state.cfg, {
+              date: st.date,
+              storeId: st.storeId,
+              storeName: st.storeName,
+            })
+          );
+          newItems = core.mergeInTransit(newItems, tr.rows, st.storeId, st.storeName).items;
+        } catch (e) {
+          toast('更新账面时在途清单没拉到：' + e.message + '（本次不含在途）', true);
+        }
+      }
+      const oldBook = core.bookFromItems(st.items);
+      const newBook = core.bookFromItems(newItems);
+      const diff = core.diffBooks(oldBook, newBook);
+      if (!diff.added.length && !diff.removed.length && !diff.changed.length && !diff.ambiguous.length) {
+        toast(`账面没有变化（${diff.newCount} 行，与本地冻结账面一致）`);
+        return;
+      }
+      pendingBookUpdate = { newItems: newItems, newBook: newBook, diff: diff };
+      renderBookDiff(diff);
+    } catch (e) {
+      if (erp.isIncomplete(e)) toast(e.message, true);
+      else if (!erp.isTokenError(e)) toast('更新账面失败：' + e.message, true);
+    } finally {
+      unbusy();
+    }
+  }
+
+  function renderBookDiff(diff) {
+    const card = $('#book-diff-card');
+    const body = $('#book-diff-body');
+    if (!card || !body) return;
+    const line = (label, n, cls) => `<div class="sum-item"><div class="k">${esc(label)}</div><div class="v ${cls || ''}">${n}</div></div>`;
+    const list = (title, arr, fmt) =>
+      arr.length
+        ? `<div class="hint" style="margin-top:10px"><b>${esc(title)}（${arr.length}）</b></div>
+           <div class="table-wrap" style="max-height:220px"><table><tbody>${arr
+             .slice(0, 200)
+             .map((x) => `<tr><td>${fmt(x)}</td></tr>`)
+             .join('')}</tbody></table></div>`
+        : '';
+    body.innerHTML =
+      `<div class="sum-list">` +
+      line('账面行数', diff.oldCount + ' → ' + diff.newCount) +
+      line('新增', diff.added.length, 'diff-pos') +
+      line('移除', diff.removed.length, diff.removed.length ? 'diff-neg' : '') +
+      line('数量变化', diff.changed.length, diff.changed.length ? 'diff-neg' : '') +
+      line('不唯一（转人工）', diff.ambiguous.length, diff.ambiguous.length ? 'diff-neg' : '') +
+      line('不变', diff.sameCount) +
+      `</div>` +
+      list('新增', diff.added, (x) => esc(x.name) + ' <span class="tag">' + esc(x.serials.join(' / ') || '无串号') + '</span>') +
+      list(
+        '移除',
+        diff.removed,
+        (x) => esc(x.name) + ' <span class="tag">' + esc(x.serials.join(' / ') || '无串号') + '</span>'
+      ) +
+      list(
+        '数量变化',
+        diff.changed,
+        (x) => esc(x.name) + ` <span class="tag">${x.oldQty} → ${x.newQty}</span>`
+      ) +
+      list(
+        '不唯一（不会自动继承确认状态）',
+        diff.ambiguous,
+        (x) => esc(x.name) + ` <span class="tag">旧 ${x.oldCount} 条 / 新 ${x.newCount} 条</span>`
+      ) +
+      `<div class="hint">应用后：扫码记录按串号重新核对；手工数量/确认/备注只保留在两版都唯一对应的条目上，
+       其余进入「待核实」由人工处理。旧账面会保留为上一版。</div>`;
+    card.classList.remove('hidden');
+  }
+
+  function applyBookUpdate() {
+    const st = state.st;
+    const upd = pendingBookUpdate;
+    if (!st || !upd) return;
+    const diff = upd.diff;
+    const newItems = upd.newItems;
+    const next = new core.Stocktake({
+      sessionId: st.sessionId,
+      companycode: state.cfg.companycode,
+      date: st.date,
+      storeId: st.storeId,
+      storeName: st.storeName,
+      items: newItems,
+      startedAt: st.startedAt,
+      bookVersion: (st.bookVersion || 1) + 1,
+      bookFetchedAt: Date.now(),
+    });
+
+    // 1) 扫码记录：按串号重放（串号是稳定身份，安全）
+    const scans = st.scans.slice();
+    next.scans = [];
+    next.scanByCode = new Map();
+    scans.forEach((r) => next.scan(r.code, r.ts));
+
+    // 2) 手工状态：只在「两版都唯一存在」的 uid 上继承，其余转「待核实」
+    const newByUid = new Map(newItems.map((i) => [i.uid, i]));
+    const dupBase = new Set();
+    newItems.forEach((i) => i.dupUid && dupBase.add(i.uid.split('#')[0]));
+    st.items.forEach((i) => i.dupUid && dupBase.add(i.uid.split('#')[0]));
+    const review = (st.pendingReview || []).slice();
+    const carry = (map, kind, apply) => {
+      Object.keys(map || {}).forEach((uid) => {
+        const target = newByUid.get(uid);
+        const base = uid.split('#')[0];
+        if (target && !dupBase.has(base)) {
+          apply(target, map[uid]);
+        } else {
+          review.push({
+            kind: kind,
+            key: uid,
+            value: typeof map[uid] === 'object' ? map[uid].ts || '' : map[uid],
+            reason: target ? '账面里该商品有多条，无法确定是哪一条' : '该商品已不在新账面里',
+          });
+        }
+      });
+    };
+    const qtyMap = st.manualQty;
+    const foundMap = st.manualFound;
+    const noteMap = st.manualNotes;
+    carry(qtyMap, '无串号实盘数量', (it, v) => {
+      next.manualQty[it.uid] = v;
+    });
+    carry(foundMap, '手工确认', (it, v) => {
+      next.manualFound[it.uid] = { ts: (v && v.ts) || Date.now() };
+    });
+    carry(noteMap, '确认备注', (it, v) => {
+      next.manualNotes[it.uid] = v;
+    });
+    next.applyManualState();
+    next.pendingReview = review;
+
+    // 3) 冻结新账面（旧账面自动留成上一版）
+    try {
+      store.replaceBook({
+        sessionId: next.sessionId,
+        companycode: state.cfg.companycode,
+        storeId: next.storeId,
+        storeName: next.storeName,
+        date: next.date,
+        version: next.bookVersion,
+        fetchedAt: next.bookFetchedAt,
+        items: core.bookFromItems(newItems),
+      });
+    } catch (e) {
+      setSaveStatus('error', e);
+      toast('新账面保存失败：' + e.message, true);
+    }
+
+    state.st = next;
+    pendingBookUpdate = null;
+    const card = $('#book-diff-card');
+    if (card) card.classList.add('hidden');
+    saveSession();
+    render();
+    toast(
+      `账面已更新到第 ${next.bookVersion} 版：新增 ${diff.added.length}、移除 ${diff.removed.length}、` +
+        `数量变化 ${diff.changed.length}、转待核实 ${diff.ambiguous.length}` +
+        (review.length ? `（待核实共 ${review.length} 条）` : '')
+    );
+  }
+
+  /* ---------------- 恢复上次盘点 ---------------- */
+  /**
+   * 恢复上次盘点：**只读本地冻结账面**，不重新拉 ERP。
+   * 断网、token 过期都能继续盘、继续导出。
+   */
+  async function tryResume() {
+    const book = store.loadBook();
+    if (book && book.items && book.items.length) {
+      return resumeFromBook(book);
+    }
+    // 旧版本（本书面账缺失）：保留备份后按串号重新核对，人工记录进「待核实」
+    const legacy = store.takeLegacy();
+    if (legacy && legacy.storeId) {
+      return resumeFromLegacy(legacy);
+    }
+    return false;
+  }
+
+  /**
+   * 加载会话备份（JSON）：换机器、清了浏览器数据、或者从别人那台接手时用。
+   * 校验通过后写进本机，然后走和续盘完全一样的恢复路径。
+   */
+  async function loadBackupFile(file) {
+    if (!file) return;
+    busy('正在加载会话备份…', file.name);
+    try {
+      const text = await file.text();
+      let j = null;
+      try {
+        j = JSON.parse(text);
+      } catch (e) {
+        throw new Error('文件不是有效的 JSON');
+      }
+      if (!j || j.kind !== 'inventory-check-backup') {
+        throw new Error('这不是本工具导出的会话备份文件');
+      }
+      const sess = j.session || {};
+      const book = sess.book;
+      if (!book || !Array.isArray(book.items) || !book.items.length) {
+        throw new Error('备份里没有账面数据（可能是不完整的文件）');
+      }
+      if (!book.sessionId || !book.storeId) {
+        throw new Error('备份里的账面信息不完整');
+      }
+      // 当前还有进行中的盘点时先确认
+      commitFocusedInput();
+      if (state.st && state.st.hasContent()) {
+        if (!confirm('本机已有进行中的盘点，加载备份会替换掉它（可先点「下载会话备份」留存）。继续？')) return;
+      }
+      cancelPendingSave();
+      store.saveBook(book);
+      if (sess.state) store.saveState(sess.state);
+      const okResume = resumeFromBook(book);
+      if (!okResume) throw new Error('备份内容无法恢复');
+      setSaveStatus('saved');
+      toast(`已加载会话备份：${book.storeName} ${book.date}（账面 ${book.items.length} 行）`);
+      saveSession();
+    } catch (e) {
+      toast('加载失败：' + e.message, true);
+      openSettings('加载会话备份失败：' + e.message, 'err');
+    } finally {
+      unbusy();
+      const inp = $('#backup-file');
+      if (inp) inp.value = ''; // 允许重复选同一个文件
+    }
+  }
+
+  /** 用本地冻结账面恢复（含只有手工确认/只有备注、还没扫码的会话） */
+  function resumeFromBook(book) {
+    const saved = store.loadState();
+    const st = new core.Stocktake({
+      sessionId: book.sessionId,
+      companycode: book.companycode,
+      date: book.date,
+      storeId: book.storeId,
+      storeName: book.storeName,
+      bookVersion: book.version || 1,
+      bookFetchedAt: book.fetchedAt || 0,
+      items: core.itemsFromBook(book.items, book.storeId, book.storeName),
+    });
+    const matched = store.stateMatches(saved, st.sessionId, st.bookVersion);
+    if (matched) {
+      st.restore(saved);
+    } else if (saved) {
+      // 账面版本对不上：本地状态不能直接套用（uid 可能不存在），保留备份并提示
+      try {
+        store.writeJSON(store.KEYS.legacy, { at: Date.now(), reason: 'book-version-mismatch', state: saved });
+      } catch (e) {
+        /* 忽略 */
+      }
+      toast('本地状态与当前账面版本不一致，已备份到「待核实」，请核对后重新盘点', true);
+    }
+
+    state.st = st;
+    state.giStatus = 'idle';
+    state.giCount = 0;
+    state.giToken = '';
+    state.date = book.date;
+    state.storeId = book.storeId;
+    state.storeName = book.storeName;
+    $('#date').value = book.date;
+    renderStoreOptions();
+    $('#store').value = book.storeId;
+    $('#setup').classList.add('hidden');
+    $('#scan-card').classList.remove('hidden');
+    $('#results-card').classList.remove('hidden');
+    render();
+    focusScan();
+    setSaveStatus('saved');
+    const fetched = book.fetchedAt ? core.fmtTime(book.fetchedAt) : '未知';
+    toast(
+      `已从本地账面恢复：${st.storeName} ${st.date}（账面 ${st.items.length} 行，拉取于 ${fetched}，` +
+        `${st.scans.length} 条扫码记录）`
+    );
+    if (state.loadGlobalIndex && state.giStatus !== 'ready' && erp.isConfigured(state.cfg)) {
+      loadGlobalIndexBg();
+    }
+    // 注意：除了上面这条可选的索引查询，续盘本身不做任何网络请求 —— 断网也能完成。
+    // 需要换店时，用户打开「接口设置」会自动去拉一次仓库列表（见 bind）。
+    return true;
+  }
+
+  /**
+   * 旧版本记录迁移：
+   * 旧数据没有保存原始账面，无法保证手工记录与当前商品对应。
+   * 这里先保留备份，然后重新拉一次账面，**只按串号重新核对扫码记录**；
+   * 手工数量、确认、备注一律列入「待核实」，不自动继承。
+   */
+  async function resumeFromLegacy(legacy) {
+    busy('正在迁移旧版本记录…', `${legacy.storeName || ''} ${legacy.date || ''}`);
+    try {
+      if (!erp.isConfigured(state.cfg)) {
+        openSettings('检测到旧版本盘点记录，但需要先登录才能重建账面并核对串号', 'warn');
+        return false;
+      }
+      const res = await withAuth(() =>
+        erp.fetchInventory(state.cfg, { date: legacy.date, storeId: legacy.storeId, label: '库存查询' })
+      );
+      const items = core.normalizeAll(res.rows, legacy.storeId);
+      const st = new core.Stocktake({
+        date: legacy.date,
+        storeId: legacy.storeId,
+        storeName: legacy.storeName,
+        companycode: state.cfg.companycode,
+        items: items,
+        startedAt: legacy.startedAt,
+        bookVersion: 1,
+        bookFetchedAt: Date.now(),
+      });
+      // 只重放扫码（按串号，安全）
+      const scans = legacy.scans || [];
+      scans.forEach((r) => st.scan(r.code, r.ts));
+
+      // 手工记录无法确认对应关系 → 全部进待核实
+      const review = [];
+      Object.keys(legacy.manualFound || {}).forEach((k) =>
+        review.push({ kind: '手工确认', key: k, ts: (legacy.manualFound[k] || {}).ts || 0 })
+      );
+      Object.keys(legacy.manualQty || {}).forEach((k) =>
+        review.push({ kind: '无串号实盘数量', key: k, value: legacy.manualQty[k] })
+      );
+      Object.keys(legacy.manualNotes || {}).forEach((k) =>
+        review.push({ kind: '确认备注', key: k, value: legacy.manualNotes[k] })
+      );
+      st.pendingReview = review;
+
+      store.saveBook({
+        sessionId: st.sessionId,
+        companycode: state.cfg.companycode,
+        storeId: legacy.storeId,
+        storeName: legacy.storeName,
+        date: legacy.date,
+        version: 1,
+        fetchedAt: st.bookFetchedAt,
+        items: core.bookFromItems(items),
+      });
+      state.st = st;
+      state.date = legacy.date;
+      state.storeId = legacy.storeId;
+      state.storeName = legacy.storeName;
+      $('#date').value = legacy.date;
+      renderStoreOptions();
+      $('#store').value = legacy.storeId;
+      $('#setup').classList.add('hidden');
+      $('#scan-card').classList.remove('hidden');
+      $('#results-card').classList.remove('hidden');
+      render();
+      saveSession();
+      toast(
+        `旧记录已迁移：按串号核对回 ${scans.length} 条扫码；${review.length} 条手工记录（数量/确认/备注）进入「待核实」，请人工核对`,
+        true
+      );
+      return true;
+    } catch (e) {
+      toast('旧记录迁移失败：' + e.message + '（原始数据已备份本机，不会丢）', true);
+      return false;
+    } finally {
+      unbusy();
+    }
+  }
+
+  /* ---------------- 事件绑定 ---------------- */
+  function bind() {
+    // 初始化配置
+    const saved = lsGet(LS_CFG);
+    if (saved) {
+      if (saved.token) state.cfg.token = saved.token;
+      if (saved.companycode) state.cfg.companycode = saved.companycode;
+      if (saved.username) state.cfg.username = saved.username;
+      if (typeof saved.sound === 'boolean') state.sound = saved.sound;
+      if (typeof saved.loadGlobalIndex === 'boolean') state.loadGlobalIndex = saved.loadGlobalIndex;
+      if (typeof saved.loadInTransit === 'boolean') state.loadInTransit = saved.loadInTransit;
+      if (saved.account) state.account = saved.account;
+      if (typeof saved.rememberPwd === 'boolean') state.rememberPwd = saved.rememberPwd;
+      // 密码只在勾选了「记住密码」时才会被保存
+      if (state.rememberPwd && saved.password) state.password = saved.password;
+    } else {
+      // 从旧版本升级：只带走本机偏好和账号，绝不带走 token / 商家编码 / 用户名。
+      // 旧版内置过公共 token，继续沿用等于让这台机器顶着别人的身份用。
+      const old = lsGet(LS_CFG_OLD);
+      if (old) {
+        if (old.account) state.account = old.account;
+        if (typeof old.sound === 'boolean') state.sound = old.sound;
+        if (typeof old.loadGlobalIndex === 'boolean') state.loadGlobalIndex = old.loadGlobalIndex;
+        if (old.rememberPwd && old.password) {
+          state.rememberPwd = true;
+          state.password = old.password;
+        }
+        setLoginStatus('检测到旧版本配置：为了不再共用内置凭证，请用你的 ERP 账号重新登录一次', 'warn');
+        saveCfg();
+      }
+    }
+    $('#date').value = core.todayStr();
+    $('#cfg-token').value = state.cfg.token;
+    $('#cfg-company').value = state.cfg.companycode;
+    $('#cfg-user').value = state.cfg.username;
+    $('#opt-sound').checked = state.sound;
+    $('#opt-index').checked = state.loadGlobalIndex;
+    $('#opt-transit').checked = state.loadInTransit;
+    $('#cfg-account').value = state.account;
+    $('#cfg-password').value = state.password;
+    $('#opt-remember').checked = state.rememberPwd;
+    if (state.account && state.password) setLoginStatus('已保存账号 ' + state.account + '，token 失效时会自动重新登录', 'ok');
+
+    $('#btn-load-wh').onclick = loadWarehouses;
+    $('#store-filter').oninput = renderStoreOptions;
+    $('#btn-start').onclick = () => loadInventory();
+
+    // ---- 账号密码登录 ----
+    $('#btn-login').onclick = () => {
+      doLogin({ vcode: core.s($('#cfg-vcode') ? $('#cfg-vcode').value : '') })
+        .then(() => loadWarehouses())
+        .catch(() => {});
+    };
+    $('#btn-vcode').onclick = () => {
+      const v = core.s($('#cfg-vcode').value);
+      if (!v) {
+        setLoginStatus('请先输入图片里的验证码', 'warn');
+        return;
+      }
+      state.vcode = v;
+      doLogin({ vcode: v })
+        .then(() => loadWarehouses())
+        .catch(() => {});
+    };
+    ['#cfg-password', '#cfg-vcode'].forEach((sel) => {
+      const el = $(sel);
+      if (el)
+        el.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            (sel === '#cfg-vcode' ? $('#btn-vcode') : $('#btn-login')).click();
+          }
+        });
+    });
+    $('#cfg-account').addEventListener('change', (e) => {
+      state.account = core.s(e.target.value);
+      saveCfg();
+    });
+    $('#cfg-password').addEventListener('change', (e) => {
+      state.password = e.target.value;
+      saveCfg();
+    });
+    $('#opt-remember').addEventListener('change', (e) => {
+      state.rememberPwd = e.target.checked;
+      saveCfg();
+      if (!state.rememberPwd) {
+        setLoginStatus('已关闭记忆：密码将不再保存到本机（当前页面仍可使用）', 'warn');
+      } else if (state.account && state.password) {
+        setLoginStatus('已记住账号 ' + state.account, 'ok');
+      }
+    });
+    $('#btn-use-token').onclick = async () => {
+      const tk = core.s($('#cfg-token').value);
+      if (!tk) {
+        setLoginStatus('请先粘贴 token', 'warn');
+        return;
+      }
+      state.cfg.token = tk;
+      state.cfg.companycode = core.s($('#cfg-company').value);
+      state.cfg.username = core.s($('#cfg-user').value);
+      setLoginStatus('正在用该 token 读取账号信息…', 'loading');
+      try {
+        await fillProfileFromToken({});
+        setLoginStatus('token 可用，商家编码已自动带出，可以拉取库存了', 'ok');
+        saveCfg();
+        loadWarehouses();
+      } catch (e) {
+        setLoginStatus('token 不可用：' + e.message, 'err');
+      }
+    };
+
+    const capImg = $('#captcha-img');
+    if (capImg)
+      capImg.onclick = () => {
+        state.vcode = '';
+        $('#btn-login').click();
+      };
+    $('#btn-forget').onclick = () => {
+      state.password = '';
+      state.vcode = '';
+      const el = $('#cfg-password');
+      if (el) el.value = '';
+      hideCaptcha();
+      saveCfg();
+      setLoginStatus('已清除本机保存的密码', 'ok');
+      toast('已清除本机保存的密码');
+    };
+    $('#btn-settings').onclick = () => {
+      $('#setup').classList.toggle('hidden');
+      if ($('#setup').classList.contains('hidden')) return;
+      // 打开设置时才按需拉仓库列表（续盘本身不联网）
+      if (!state.warehouses.length && erp.isConfigured(state.cfg)) loadWarehouses();
+      else $('#date').focus();
+    };
+    $('#btn-gi').onclick = () => {
+      state.giStatus = 'idle';
+      loadGlobalIndexBg();
+    };
+    $('#btn-new').onclick = () => {
+      // 先把正在编辑的内容提交掉，再判断"有没有内容"
+      commitFocusedInput();
+      const st = state.st;
+      if (st && st.hasContent() && !confirm('确定要结束本次盘点吗？\n扫码、手工确认、实盘数量和备注都会从本机清除。')) return;
+      cancelPendingSave(); // 取消没执行的保存任务，避免它把数据又写回来
+      store.clearState();
+      store.clearBook();
+      state.st = null;
+      state.lastResult = null;
+      state.giStatus = 'idle';
+      state.giCount = 0;
+      state.pendingReview = [];
+      $('#setup').classList.remove('hidden');
+      $('#scan-card').classList.add('hidden');
+      $('#results-card').classList.add('hidden');
+      const diffCard = $('#book-diff-card');
+      if (diffCard) diffCard.classList.add('hidden');
+      setSessionHeader();
+      setSaveStatus('idle');
+      toast('已结束本次盘点，可重新选择仓库开始');
+    };
+
+    $('#btn-apply-book').onclick = () => applyBookUpdate();
+    $('#btn-cancel-book').onclick = () => {
+      pendingBookUpdate = null;
+      const card = $('#book-diff-card');
+      if (card) card.classList.add('hidden');
+      toast('已放弃本次账面更新，当前账面未变');
+    };
+
+    // 下载会话备份（保存失败时的保命通道）
+    $('#btn-backup').onclick = downloadBackup;
+
+    // 加载未完成盘点（开头那个按钮）
+    $('#btn-load-backup').onclick = () => $('#backup-file').click();
+    $('#backup-file').addEventListener('change', (e) => {
+      const f = e.target.files && e.target.files[0];
+      if (f) loadBackupFile(f);
+    });
+
+    // 更新账面：明确的独立操作，保留旧账面为上一版
+    $('#btn-update-book').onclick = () => updateBook();
+
+    // 配置项
+    const applyCfg = () => {
+      state.cfg.token = core.s($('#cfg-token').value);
+      state.cfg.companycode = core.s($('#cfg-company').value);
+      state.cfg.username = core.s($('#cfg-user').value);
+      saveCfg();
+    };
+    ['#cfg-token', '#cfg-company', '#cfg-user'].forEach((sel) => {
+      $(sel).addEventListener('change', applyCfg);
+    });
+    $('#opt-sound').addEventListener('change', (e) => {
+      state.sound = e.target.checked;
+      saveCfg();
+    });
+    $('#opt-index').addEventListener('change', (e) => {
+      state.loadGlobalIndex = e.target.checked;
+      saveCfg();
+    });
+    $('#opt-transit').addEventListener('change', (e) => {
+      state.loadInTransit = e.target.checked;
+      saveCfg();
+    });
+
+    // 扫码输入
+    const si = $('#scan-input');
+    si.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const v = si.value;
+        si.value = '';
+        handleScanInput(v);
+      } else if (e.key === 'Escape') {
+        si.value = '';
+        state.lastResult = null;
+        renderScanCard();
+      }
+    });
+    si.addEventListener('blur', () => {
+      // 稍后自动抢回焦点，保证扫码枪随时可用
+      setTimeout(() => {
+        if (!$('#scan-card').classList.contains('hidden') && !state.busy) {
+          const ae = document.activeElement;
+          const tag = ae ? ae.tagName : '';
+          if (tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA' && tag !== 'BUTTON') si.focus();
+        }
+      }, 120);
+    });
+
+    $('#btn-undo').onclick = undoLast;
+
+    // 「最近扫描」里每条后面的 ✕（它在扫码卡片里，不在结果卡片上，所以要单独委托）
+    $('#scan-card').addEventListener('click', (e) => {
+      const act = e.target.closest && e.target.closest('[data-act="unscan-at"]');
+      if (!act || !state.st) return;
+      const idx = Number(act.getAttribute('data-key'));
+      const rec = state.st.removeScan(idx);
+      if (!rec) return;
+      toast(`已删除这一条：${rec.code}`);
+      state.lastResult = null;
+      saveSession();
+      render();
+    });
+    $('#btn-export').onclick = exportXlsx;
+    $('#btn-export-csv').onclick = exportCsv;
+    $('#btn-print').onclick = () => window.print();
+
+    // 结果区事件委托
+    $('#results-card').addEventListener('click', (e) => {
+      const tabBtn = e.target.closest('[data-tab]');
+      if (tabBtn) {
+        commitFocusedInput(); // 切页前先把没失焦的输入提交掉
+        const next = tabBtn.getAttribute('data-tab');
+        const same = state.tab === next;
+        state.tab = next;
+        renderResults();
+        // 点的是当前这一页时不抢焦点（否则正在填数字的人会被弹回扫码框）
+        if (!same) focusScan();
+        return;
+      }
+      const act = e.target.closest('[data-act]');
+      if (act) {
+        const a = act.getAttribute('data-act');
+        if (a === 'show-all') {
+          state.showAll[state.tab] = true;
+          renderResults();
+        } else if (a === 'export-tab') {
+          exportTabCsv();
+        } else if (a === 'confirm') {
+          const key = act.getAttribute('data-key');
+          const it = state.st.confirmFound(key);
+          if (it) {
+            toast(`已手工确认：${cut(it.name, 24)}`);
+            beep('ok');
+          }
+          saveSession();
+          render();
+          focusScan();
+        } else if (a === 'confirm-all') {
+          const keys = bulkPendingKeys();
+          if (!keys.length) {
+            toast('没有「填了实盘数量但还没确认」的行');
+            return;
+          }
+          if (
+            !confirm(
+              `将把已填实盘数量的 ${keys.length} 行无串号商品标记为已确认，\n确认后这些行会移到「已扫明细」（可逐条撤销）。确定继续？`
+            )
+          )
+            return;
+          const done = state.st.confirmAllFilledNonSerial(Date.now(), keys);
+          saveSession();
+          render();
+          focusScan();
+          toast(`已确认 ${done.length} 行无串号商品`);
+        } else if (a === 'unscan') {
+          const key = act.getAttribute('data-key');
+          const it = state.st.itemByKey.get(key);
+          const rec = state.st.undoScanForItem(key);
+          if (rec) {
+            toast(`已撤销这一扫：${rec.code}${it ? '（' + cut(it.name, 20) + '）' : ''}`);
+            saveSession();
+            render();
+            focusScan();
+          } else {
+            toast('没有找到这台的扫码记录');
+          }
+        } else if (a === 'unscan-code') {
+          const code = act.getAttribute('data-key');
+          const n = state.st.removeCode(code);
+          toast(`已删除 ${code} 的 ${n} 条扫描记录`);
+          saveSession();
+          render();
+          focusScan();
+        } else if (a === 'unscan-at') {
+          const idx = Number(act.getAttribute('data-key'));
+          const rec = state.st.removeScan(idx);
+          if (rec) {
+            toast(`已删除这一条：${rec.code}`);
+            state.lastResult = null;
+            saveSession();
+            render();
+          }
+        } else if (a === 'unconfirm') {
+          const key = act.getAttribute('data-key');
+          const it = state.st.unconfirmFound(key);
+          if (it) toast(`已撤销手工确认：${cut(it.name, 24)}`);
+          saveSession();
+          render();
+          focusScan();
+        } else if (a === 'filter-demo') {
+          state.search[state.tab] = state.search[state.tab] === '样' ? '' : '样';
+          renderResults();
+        }
+      }
+    });
+    $('#results-card').addEventListener('input', (e) => {
+      // 正在填实盘数量：按钮上的待提交行数跟着走
+      if (e.target.getAttribute && e.target.getAttribute('data-kind') === 'qty') {
+        refreshNonSerialBar();
+        return;
+      }
+      if (e.target.id === 'search') {
+        state.search[state.tab] = e.target.value;
+        const pos = e.target.selectionStart;
+        renderResults();
+        const el = $('#search');
+        if (el) {
+          el.focus();
+          try {
+            el.setSelectionRange(pos, pos);
+          } catch (err) {}
+        }
+      }
+    });
+    $('#results-card').addEventListener('change', (e) => {
+      const t = e.target;
+      if (!state.st) return;
+      const kind = t.getAttribute && t.getAttribute('data-kind');
+      if (!kind) return;
+      const key = t.getAttribute('data-key');
+      if (kind === 'qty') {
+        commitQty(t);
+      } else if (kind === 'note') {
+        state.st.remarks[key] = t.value;
+        saveSession();
+      } else if (kind === 'mnote') {
+        state.st.setManualNote(key, t.value);
+        saveSession();
+      }
+    });
+
+    // 表格里的输入框：Tab / 回车 跳到「下一行的同一列」，方便一列一列往下填
+    $('#results-card').addEventListener('keydown', (e) => {
+      const el = e.target;
+      if (!el || !el.getAttribute || !el.getAttribute('data-kind')) return;
+      if (e.key !== 'Tab' && e.key !== 'Enter') return;
+      e.preventDefault();
+      if (el.getAttribute('data-kind') === 'qty') commitQty(el);
+      moveSameColumn(el, e.shiftKey ? -1 : 1);
+    });
+
+    // 全局按键：不在输入框里打字时，自动把焦点送回扫码框
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const tag = e.target && e.target.tagName;
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+      if (e.key.length === 1) focusScan();
+    });
+  }
+
+  /* ---------------- 启动 ---------------- */
+  async function main() {
+    bind();
+    setSessionHeader();
+
+    // 先尝试从本地冻结账面恢复：这一步不联网，断网/登录过期都能继续盘
+    const resumed = await tryResume();
+    if (resumed) return;
+
+    if (!erp.isConfigured(state.cfg)) {
+      // 首次使用 / 还没登录：不发任何请求，直接引导登录
+      $('#setup').classList.remove('hidden');
+      const adv = document.querySelector('.adv');
+      if (adv) adv.open = true;
+      if (!state.loginStatus) {
+        setLoginStatus('首次使用请先用 ERP 账号密码登录一次（登录后会自动带出商家编码，之后 token 会自动续期）', 'warn');
+      }
+      const el = $('#cfg-account');
+      if (el) el.focus();
+      return;
+    }
+
+    // 没有可恢复的会话才需要仓库列表（用来开新盘点）
+    try {
+      state.warehouses = await withAuth(() => erp.fetchWarehouses(state.cfg));
+      renderStoreOptions();
+      if (state.loginStatusKind === 'ok') setLoginStatus(state.loginStatus, 'ok');
+    } catch (e) {
+      if (e.notConfigured) {
+        /* 已在上面的分支处理 */
+      } else if (erp.isTokenError(e)) {
+        requireLogin('登录已过期，请填写 ERP 账号密码重新登录');
+      } else {
+        toast('仓库列表读取失败：' + e.message, true);
+      }
+    }
+    if (!state.st) $('#setup').classList.remove('hidden');
+  }
+
+  // 供测试/排查使用
+  window.ICUI = {
+    loadBackupFile: (f) => loadBackupFile(f),
+    updateBook: () => updateBook(),
+    applyBookUpdate: () => applyBookUpdate(),
+    downloadBackup: () => downloadBackup(),
+    state: () => state,
+  };
+
+  window.addEventListener('DOMContentLoaded', main);
+})();
+
+    </script>
+  </body>
+</html>

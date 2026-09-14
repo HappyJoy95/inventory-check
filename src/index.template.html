@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>门店库存盘点 · 扫码核对</title>
+    <style>
+      /*__CSS__*/
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="topbar">
+        <h1>门店<span>库存盘点</span></h1>
+        <div class="session" id="session-info"></div>
+        <button id="btn-settings" class="ghost">接口设置</button>
+      </div>
+
+      <!-- 设置 / 拉取 -->
+      <section class="card hidden" id="setup">
+        <h2>① 选择门店并拉取账面库存 <span class="sub">数据来自云商 ERP 实时库存</span></h2>
+        <div class="row">
+          <div class="field">
+            <label>盘点日期（库存快照日）</label>
+            <input type="date" id="date" />
+          </div>
+          <div class="field">
+            <label>筛选仓库</label>
+            <input type="text" id="store-filter" placeholder="输入关键字过滤，如：万达" style="width: 150px" />
+          </div>
+          <div class="field" style="flex: 1; min-width: 260px">
+            <label>仓库（门店仓）</label>
+            <select id="store" style="width: 100%; max-width: none"></select>
+          </div>
+          <button id="btn-load-wh" class="ghost">刷新仓库列表</button>
+          <button id="btn-start" class="primary">开始拉取库存</button>
+          <button id="btn-load-backup" class="ghost" title="导入之前导出的「会话备份」JSON，接着上次没盘完的继续">加载未完成盘点</button>
+          <input type="file" id="backup-file" accept=".json,application/json" class="hidden" />
+        </div>
+        <div class="hint">
+          选择门店对应的<b>仓库</b>，点击开始拉取。拉取成功后进入扫码盘点界面。<br />
+          换电脑、清了浏览器数据、或者从别人那台机器接手时，用 <b>加载未完成盘点</b> 选之前导出的会话备份 JSON，
+          就能接着上次的进度继续盘（账面、扫码、手工确认、实盘数量、备注都会回来）。
+        </div>
+
+        <details class="adv">
+          <summary>账号密码登录 / 接口设置</summary>
+          <div class="login-box">
+            <div class="hint" style="margin-top: 10px; color: #3c4a63">
+              <b>首次使用：</b>填入你<b>自己的</b> ERP 账号和密码 → 点「登录并更新 token」。
+              程序会用账号换 token，并自动带出商家编码，之后 token 过期会自动续期。<br />
+              本工具<b>不含任何内置账号或凭证</b>，不会用别人的身份拉数据。
+            </div>
+            <div class="row" style="margin-top: 12px">
+              <div class="field">
+                <label>ERP 账号</label>
+                <input type="text" id="cfg-account" autocomplete="username" style="width: 180px" />
+              </div>
+              <div class="field">
+                <label>密码</label>
+                <input type="password" id="cfg-password" autocomplete="current-password" style="width: 180px" />
+              </div>
+              <button id="btn-login" class="primary">登录并更新 token</button>
+              <label class="chk"><input type="checkbox" id="opt-remember" /> 记住密码</label>
+              <button id="btn-forget" class="ghost">清除已保存密码</button>
+              <button id="btn-use-token" class="ghost">用下面的 token 验证</button>
+            </div>
+            <div class="row hidden" id="captcha-row" style="margin-top: 10px">
+              <img id="captcha-img" alt="验证码" title="点一下换一张" />
+              <input type="text" id="cfg-vcode" placeholder="输入图中验证码" style="width: 150px" maxlength="8" />
+              <button id="btn-vcode">提交验证码</button>
+              <span class="hint" style="margin: 0">看不清就点图片换一张</span>
+            </div>
+            <div class="login-status" id="login-status"></div>
+            <div class="hint" style="margin-top: 6px">
+              <b>只保存 token 是默认行为</b>：不勾「记住密码」时，本机只留 token，密码不落盘；
+              token 过期会提示你重新登录。<br />
+              勾上「记住密码」后，token 过期才能自动续期：密码以明文存在<b>本机浏览器</b>（只在本机可见、不会上传），
+              公用电脑请保持不勾选，或事后点「清除已保存密码」。
+            </div>
+          </div>
+
+          <div class="row" style="margin-top: 12px">
+            <div class="field" style="flex: 1; min-width: 260px">
+              <label>登录 token（一般不用手工填：登录后会自动写入）</label>
+              <input type="text" id="cfg-token" class="mono" />
+            </div>
+            <div class="field">
+              <label>商家编码 companycode</label>
+              <input type="text" id="cfg-company" />
+            </div>
+            <div class="field">
+              <label>用户名 username</label>
+              <input type="text" id="cfg-user" />
+            </div>
+          </div>
+          <div class="row" style="margin-top: 12px">
+            <label class="chk"><input type="checkbox" id="opt-sound" /> 扫码提示音</label>
+            <label class="chk">
+              <input type="checkbox" id="opt-index" /> 拉取库存后自动建立全库串号索引（约 10~20 秒，用于识别非本店库存）
+            </label>
+            <label class="chk">
+              <input type="checkbox" id="opt-transit" /> 拉取「在途（待入库）」清单（账面已挂到本店、货还没到的）
+            </label>
+            <button id="btn-gi" class="ghost">立即加载全库索引</button>
+          </div>
+          <div class="hint">
+            所有设置都只保存在本机浏览器 localStorage，不会上传到任何地方。
+          </div>
+        </details>
+      </section>
+
+      <!-- 扫码台 -->
+      <section class="card hidden" id="scan-card">
+        <h2>② 扫码盘点 <span class="sub" id="scan-store"></span></h2>
+        <div class="scan-grid">
+          <div>
+            <input
+              type="text"
+              id="scan-input"
+              class="scan-input"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="把光标放这里，扫码枪扫 SN / IMEI 条码（会自动回车提交）"
+            />
+            <div class="feedback" id="feedback"></div>
+            <div class="toolbar">
+              <button id="btn-undo">撤销上一扫</button>
+              <button id="btn-update-book" class="ghost" title="重新从 ERP 拉取库存，先看差异再决定是否应用；旧账面会保留为上一版">更新账面</button>
+              <button id="btn-backup" class="ghost" title="把当前会话（账面 + 记录）导出成文件，保存失败时用它保命">下载会话备份</button>
+              <button id="btn-new" class="ghost">结束本次盘点</button>
+              <span class="save-status" id="save-status"></span>
+            </div>
+            <div class="recent" id="recent"></div>
+          </div>
+          <div>
+            <div class="stat-grid" id="stats"></div>
+            <div class="progress"><i id="progress-bar"></i></div>
+            <div class="progress-label"><span id="progress-text"></span><span id="progress-extra"></span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 账面更新差异评审 -->
+      <section class="card hidden" id="book-diff-card">
+        <h2>账面更新评审 <span class="sub">确认差异后再应用，旧账面会保留为上一版</span></h2>
+        <div id="book-diff-body"></div>
+        <div class="toolbar">
+          <button id="btn-apply-book" class="primary">应用新账面</button>
+          <button id="btn-cancel-book" class="ghost">取消，保持当前账面</button>
+        </div>
+      </section>
+
+      <!-- 结果 -->
+      <section class="card hidden" id="results-card">
+        <h2>③ 盘点结果 <span class="sub">扫完后在这里看未扫到 / 表外码</span></h2>
+        <div class="tabs" id="tabs"></div>
+        <div id="tab-body"></div>
+        <div class="toolbar export-bar">
+          <button id="btn-export" class="primary">导出完整 Excel</button>
+          <button id="btn-export-csv">导出 CSV</button>
+          <button id="btn-print">打印</button>
+          <span class="spacer"></span>
+          <span class="hint" style="margin: 0">扫描记录实时保存在本机浏览器，关掉页面再打开可继续</span>
+        </div>
+      </section>
+    </div>
+
+    <div class="toast" id="toast"></div>
+    <div class="loading-mask hidden" id="loading">
+      <div class="loading-box">
+        <div class="spinner"></div>
+        <div class="msg" id="loading-msg">处理中…</div>
+        <div class="sub" id="loading-sub"></div>
+      </div>
+    </div>
+
+    <script>
+      /*__CORE__*/
+    </script>
+    <script>
+      /*__ERP__*/
+    </script>
+    <script>
+      /*__STORE__*/
+    </script>
+    <script>
+      /*__XLSX__*/
+    </script>
+    <script>
+      /*__UI__*/
+    </script>
+  </body>
+</html>

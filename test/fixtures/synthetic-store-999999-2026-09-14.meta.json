@@ -1,0 +1,15 @@
+{
+ "storeId": "999999",
+ "storeName": "测试门店库",
+ "date": "2026-09-14",
+ "capturedAt": "2026-09-14T06:26:47.192Z",
+ "synthetic": true,
+ "note": "合成夹具：结构同真实抓取，商品名与串号均为生成数据，不含真实门店信息",
+ "totalRows": 442,
+ "serialRows": 407,
+ "nonSerialRows": 35,
+ "totalSerials": 675,
+ "multiSerialRows": 176,
+ "tripleSerialRows": 92,
+ "bookQty": 1295
+}
